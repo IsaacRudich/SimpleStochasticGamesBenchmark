@@ -1,12 +1,14 @@
 mutable struct MutableSGNode
-    type    ::NodeTypes
+    label    ::Int
+    type     ::NodeTypes
     arc_a    ::Int
     arc_b    ::Int
 end
 
-MutableSGNode(type::NodeTypes) = MutableSGNode(type::NodeTypes,0,0)
+MutableSGNode(label::Int,type::NodeTypes) = MutableSGNode(label,type,0,0)
 
-Base.show(io::IO,node::MutableSGNode) = Base.print(io, "{",node.type," , ",node.arc_a," , ",node.arc_b,"}")
+Base.show(io::IO,node::MutableSGNode) = Base.print(io, "{",node.label,",",node.type," , ",node.arc_a," , ",node.arc_b,"}")
+Base.hash(node::MutableSGNode) = hash(node.label)
 
 Base.:(==)(x::MutableSGNode,y::MutableSGNode) =  x.type==y.type && x.arc_a==y.arc_a && x.arc_b==y.arc_b ? true : false
 

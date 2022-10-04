@@ -5,6 +5,9 @@ using StatsBase
 using JuMP
 using CPLEX
 
+using TimerOutputs
+const to = TimerOutput()
+
 include("sg_objects/sg_objects.jl")
 include("io/io.jl")
 include("generator/generator.jl")
