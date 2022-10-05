@@ -64,7 +64,6 @@ function generate_reduced_stopping_game(nmax::Int, nmin::Int, navg::Int)
     candidatelist =  falses(length(game)-2)
     #initialize average node second candidate list
     nodelist = Vector{Int}(1:length(game))
-
     #memory pre-allocation for the bad subgraph checker
     reachablenodes = falses(length(game)-2)
     queue = Vector{Int}()
@@ -77,10 +76,10 @@ function generate_reduced_stopping_game(nmax::Int, nmin::Int, navg::Int)
     randomorder = sample(1:length(game)-2, length(game)-2, replace = false)
     @timeit to "second arcs" run_main_loop_to_assign_second_arcs!(game, parentmap, inzeronodes,  nodelist, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, randomorder)
     
-    println(length(inzeronodes))
-    println(sum(verybadnodes))
+    println("in-zeros:  ",length(inzeronodes))
+    println("very bad nodes ", sum(verybadnodes))
 
-    println(to)
+    return game, parentmap
 end
 
 """
@@ -123,7 +122,9 @@ function run_main_loop_to_assign_second_arcs!(game::Vector{MutableSGNode}, paren
         #if there are in-zero nodes
         else
             if game[assignment].type==average
-                @timeit to "second avg arcs" assignsecondaveragearc!(game,  parentmap, inzeronodes, inzeronodes, assignment)
+                @timeit to "second avg arcs" if assignsecondaveragearc!(game,  parentmap, inzeronodes, inzeronodes, assignment) == -1
+                    assignsecondaveragearc!(game,  parentmap, inzeronodes, nodelist, assignment)
+                end
             #no in-zero nodes AND is NOT an average node
             else
                 #reset the list
@@ -153,105 +154,12 @@ function run_main_loop_to_assign_second_arcs!(game::Vector{MutableSGNode}, paren
 end
 
 """
-    isbadsubgraph!(reachablenodes::BitVector, queue::Vector{Int}, newqueue::Vector{Int}, game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, origin::Int, destination::Int)
-
-Checks if a partially generated Stopping Game would contain a bad subgraph is the provided arc was added
-The first three parameters do not need to contain accurate information, they are pre-allocated for performance purposes
-Returns::Bool
-
-# Arguments
-- `reachablenodes::BitVector`: A bit vector such that length(reachablenodes) == length(game)-2 
-- `queue::Vector{Int}`:: A list of integers, preferred empty
-- `newqueue::Vector{Int}`: A list of integers, preferred empty
-- `game::Vector{MutableSGNode}`: The partially generated Stopping Game
-- `parentmap::Dict{Int, Vector{Int}},`: A map from nodes to a list of their parents
-- `origin::Int`: The origin of the arc being added
-- `destination::Int`: The destination of the arc being added
-"""
-function isbadsubgraph!(reachablenodes::BitVector, queue::Vector{Int}, newqueue::Vector{Int}, game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, origin::Int, destination::Int)
-    #setup reachable nodes list and queue
-    reachablenodes .= false
-    reachablenodes[destination] = true
-    empty!(queue)
-    empty!(newqueue)
-    push!(queue, destination)
-
-    #find reachable nodes
-    while !isempty(queue)
-        for node in queue
-            if game[node].arc_a < length(game)-1 && !reachablenodes[game[node].arc_a]
-                reachablenodes[game[node].arc_a] = true
-                push!(newqueue, game[node].arc_a)
-            end
-            if game[node].arc_b < length(game)-1 && game[node].arc_b > 0 && !reachablenodes[game[node].arc_b]
-                reachablenodes[game[node].arc_b] = true
-                push!(newqueue, game[node].arc_b)
-            end
-        end
-        empty!(queue)
-        queue = copy(newqueue)
-        empty!(newqueue)
-    end
-
-    #if the origin of the added arc is not reachable, no bad subgraph was created
-    if !reachablenodes[origin]
-        return false
-    end
-
-    #iteratively remove nodes until graph is provably good or bad
-    noderemoved = true
-    while noderemoved
-        noderemoved = false
-
-        for i in eachindex(reachablenodes)
-            if reachablenodes[i]
-                if game[i].type == average
-                    #if either arc of an average node points somewhere not reachable
-                    if (game[i].arc_a > length(game)-2 || !reachablenodes[game[i].arc_a]) || (game[i].arc_b > 0 && game[i].arc_b < length(game)-1 && !reachablenodes[game[i].arc_b])
-                        reachablenodes[i] = false
-                        noderemoved = true
-                    end
-                end
-                #if the previous if statment did not trigger, try remove due to no out arcs
-                if reachablenodes[i]
-                    #if neither arc points to a reachable node, accounting for possibel nonexistent second arcs
-                    if (game[i].arc_a > length(game)-2 || !reachablenodes[game[i].arc_a]) && (game[i].arc_b > 0 || game[i].arc_b < length(game)-1 || !reachablenodes[game[i].arc_b])
-                        reachablenodes[i] = false
-                        noderemoved = true
-                    end
-                end
-                #if the previous if statment did not trigger, try remove due to no in arcs
-                if reachablenodes[i]
-                    noparent = true
-                    for p in parentmap[i]
-                        if reachablenodes[p]
-                            noparent = false
-                            break
-                        end
-                    end
-                    if noparent
-                        reachablenodes[i] = false
-                        noderemoved = true
-                    end
-                end
-
-                #check if proof achieved
-                if (i == origin || i == destination) && !reachablenodes[origin] || !reachablenodes[destination]
-                    return false
-                end
-            end
-        end
-    end
-
-    return true
-end
-
-"""
     assignsecondaveragearc!(game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, inzeronodes::Vector{Int}, nodelist::Vector{Int}, origin::Int)
 
 Assigns a second arc to an average node
 Several parameters are only there so that they are pre-allocated for performance.
 All paramaters except 'assignment' may be modified
+Returns ::Int the node the arc is assigned to
 
 # Arguments
 - `game::Vector{MutableSGNode}`: The partially generated Stopping Game
@@ -261,9 +169,14 @@ All paramaters except 'assignment' may be modified
 - `origin::Int`: The node getting a second arc
 """
 function assignsecondaveragearc!(game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, inzeronodes::Vector{Int}, nodelist::Vector{Int}, origin::Int)
-    game[origin].arc_b = getothernode(origin, game[origin].arc_a, nodelist)
-    push!(parentmap[game[origin].arc_b],origin)
-    removefromsortedlist!(game[origin].arc_b, inzeronodes)
+    newnode = getothernode(origin, game[origin].arc_a, nodelist)
+    if newnode != -1
+        game[origin].arc_b = getothernode(origin, game[origin].arc_a, nodelist)
+        push!(parentmap[game[origin].arc_b],origin)
+        removefromsortedlist!(game[origin].arc_b, inzeronodes)
+        return newnode
+    end
+    return newnode
 end
 
 """
@@ -303,6 +216,99 @@ function assignsecondmaxminarc!(game::Vector{MutableSGNode},  parentmap::Dict{In
     end
 
     return newnode
+end
+
+"""
+    isbadsubgraph!(reachablenodes::BitVector, queue::Vector{Int}, newqueue::Vector{Int}, game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, origin::Int, destination::Int)
+
+Checks if a partially generated Stopping Game would contain a bad subgraph is the provided arc was added
+The first three parameters do not need to contain accurate information, they are pre-allocated for performance purposes
+Returns::Bool
+
+# Arguments
+- `reachablenodes::BitVector`: A bit vector such that length(reachablenodes) == length(game)-2 
+- `queue::Vector{Int}`:: A list of integers, preferred empty
+- `newqueue::Vector{Int}`: A list of integers, preferred empty
+- `game::Vector{MutableSGNode}`: The partially generated Stopping Game
+- `parentmap::Dict{Int, Vector{Int}},`: A map from nodes to a list of their parents
+- `origin::Int`: The origin of the arc being added
+- `destination::Int`: The destination of the arc being added
+"""
+function isbadsubgraph!(reachablenodes::BitVector, queue::Vector{Int}, newqueue::Vector{Int}, game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, origin::Int, destination::Int)
+    #setup reachable nodes list and queue
+    reachablenodes .= false
+    reachablenodes[destination] = true
+    empty!(queue)
+    empty!(newqueue)
+    push!(queue, destination)
+
+    #find reachable nodes
+    while !isempty(queue)
+        for node in queue
+            if node != origin
+                if game[node].arc_a < length(game)-3 && !reachablenodes[game[node].arc_a]
+                    reachablenodes[game[node].arc_a] = true
+                    push!(newqueue, game[node].arc_a)
+                end
+                if game[node].arc_b < length(game)-3 && game[node].arc_b > 0 && !reachablenodes[game[node].arc_b]
+                    reachablenodes[game[node].arc_b] = true
+                    push!(newqueue, game[node].arc_b)
+                end
+            end
+        end
+        queue = copy(newqueue)
+        empty!(newqueue)
+    end
+
+    #if the origin of the added arc is not reachable, no bad subgraph was created
+    if !reachablenodes[origin]
+        return false
+    end
+
+    #iteratively remove nodes until graph is provably good or bad
+    noderemoved = true
+    while noderemoved
+        noderemoved = false
+        for i in eachindex(reachablenodes)
+            if reachablenodes[i]
+                if game[i].type == average
+                    #if either arc of an average node points somewhere not reachable
+                    if (game[i].arc_a > length(game)-2 || !reachablenodes[game[i].arc_a]) || (game[i].arc_b > 0 && game[i].arc_b < length(game)-1 && !reachablenodes[game[i].arc_b])
+                        reachablenodes[i] = false
+                        noderemoved = true
+                    end
+                end
+                #if the previous if statment did not trigger, try remove due to no out arcs
+                if reachablenodes[i]
+                    #if neither arc points to a reachable node, accounting for possible nonexistent second arcs
+                    if (game[i].arc_a > length(game)-2 || !reachablenodes[game[i].arc_a]) && (game[i].arc_b > 0 && game[i].arc_b < length(game)-1 && !reachablenodes[game[i].arc_b])
+                        reachablenodes[i] = false
+                        noderemoved = true
+                    end
+                end
+                #if the previous if statment did not trigger, try remove due to no in arcs
+                if reachablenodes[i]
+                    noparent = true
+                    for p in parentmap[i]
+                        if reachablenodes[p]
+                            noparent = false
+                            break
+                        end
+                    end
+                    if noparent
+                        reachablenodes[i] = false
+                        noderemoved = true
+                    end
+                end
+
+                #check if proof achieved
+                if (i == origin || i == destination) && !reachablenodes[origin] || !reachablenodes[destination]
+                    return false
+                end
+            end
+        end
+    end
+    return true
 end
 
 """

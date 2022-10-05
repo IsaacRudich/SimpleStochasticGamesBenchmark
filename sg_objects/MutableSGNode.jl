@@ -8,6 +8,17 @@ end
 MutableSGNode(label::Int,type::NodeTypes) = MutableSGNode(label,type,0,0)
 
 Base.show(io::IO,node::MutableSGNode) = Base.print(io, "{",node.label,",",node.type," , ",node.arc_a," , ",node.arc_b,"}")
+function Base.show(io::IO,nodes::Vector{MutableSGNode})
+    i = 1
+    for node in nodes
+        Base.print(io,node, "  ")
+        if mod(i, 3) == 0
+            println()
+        end
+        i+=1
+    end
+end
+
 Base.hash(node::MutableSGNode) = hash(node.label)
 
 Base.:(==)(x::MutableSGNode,y::MutableSGNode) =  x.type==y.type && x.arc_a==y.arc_a && x.arc_b==y.arc_b ? true : false
