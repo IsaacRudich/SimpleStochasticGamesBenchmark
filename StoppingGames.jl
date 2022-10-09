@@ -14,12 +14,13 @@ include("generator/generator.jl")
 #include("algorithms/algorithms.jl")
 
 function test(nmax::Int, nmin::Int, navg::Int)
-    game, parentmap = generate_reduced_stopping_game(nmax,nmin,navg)
-    println(game)
+    @timeit to "total" game, parentmap = generate_reduced_stopping_game(nmax,nmin,navg)
+    #println(game)
     #=for (key, value) in parentmap
         print("$key => $value     ")
     end
     println()=#
     println(to)
+    reset_timer!(to)
 end 
 

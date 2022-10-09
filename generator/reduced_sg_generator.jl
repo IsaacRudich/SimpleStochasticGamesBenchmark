@@ -11,7 +11,8 @@ Returns::Vector{MutableSGNode}
 """
 function generate_reduced_stopping_game(nmax::Int, nmin::Int, navg::Int)
     if navg<2
-        throw("reduced stopping games must have at least 2 average nodes")
+        println("Reduced stopping games must have at least 2 average nodes")
+        return Vector{MutableSGNode}()
     end
 
     game = Vector{MutableSGNode}(undef,nmax+nmin+navg+2)
@@ -113,9 +114,9 @@ function run_main_loop_to_assign_second_arcs!(game::Vector{MutableSGNode}, paren
                 #add the two starting forbidden elements
                 candidatelist[assignment] = false
                 candidatelist[game[assignment].arc_a] = false
-                @timeit to "second maxmin arcs" newarcdestination = assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, assignment)
-                if newarcdestination == -1
+                @timeit to "second maxmin arcs" if assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, assignment) == -1
                     #no second arc found add to rerun queue
+                    #should never happen
                     verybadnodes[assignment] = true
                 end
             end
@@ -135,16 +136,15 @@ function run_main_loop_to_assign_second_arcs!(game::Vector{MutableSGNode}, paren
                 #add the two starting forbidden elements
                 candidatelist[assignment] = false
                 candidatelist[game[assignment].arc_a] = false
-                @timeit to "second maxmin arcs" newarcdestination = assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, assignment)
-                if newarcdestination == -1
+                @timeit to "second maxmin arcs" if assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, assignment) == -1
                     #reset the list to run without in-zeros
                     candidatelist.=true
                     #add the two starting forbidden elements
                     candidatelist[assignment] = false
                     candidatelist[game[assignment].arc_a] = false
-                    @timeit to "second maxmin arcs" newarcdestination = assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, assignment)
-                    if newarcdestination == -1
+                    @timeit to "second maxmin arcs" if assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, assignment) == -1 
                         #no second arc found add to rerun queue
+                        #should never happen
                         verybadnodes[assignment] = true
                     end
                 end
@@ -171,9 +171,9 @@ Returns ::Int the node the arc is assigned to
 function assignsecondaveragearc!(game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, inzeronodes::Vector{Int}, nodelist::Vector{Int}, origin::Int)
     newnode = getothernode(origin, game[origin].arc_a, nodelist)
     if newnode != -1
-        game[origin].arc_b = getothernode(origin, game[origin].arc_a, nodelist)
-        push!(parentmap[game[origin].arc_b],origin)
-        removefromsortedlist!(game[origin].arc_b, inzeronodes)
+        game[origin].arc_b = newnode
+        push!(parentmap[newnode],origin)
+        removefromsortedlist!(newnode, inzeronodes)
         return newnode
     end
     return newnode
@@ -210,7 +210,7 @@ function assignsecondmaxminarc!(game::Vector{MutableSGNode},  parentmap::Dict{In
             candidatelist[newnode] = false
             newnode = getothernode(candidatelist)
         else
-            removefromsortedlist!(game[assignment].arc_b, inzeronodes)
+            removefromsortedlist!(newnode, inzeronodes)
             break
         end
     end
@@ -273,7 +273,7 @@ function isbadsubgraph!(reachablenodes::BitVector, queue::Vector{Int}, newqueue:
             if reachablenodes[i]
                 if game[i].type == average
                     #if either arc of an average node points somewhere not reachable
-                    if (game[i].arc_a > length(game)-2 || !reachablenodes[game[i].arc_a]) || (game[i].arc_b > 0 && game[i].arc_b < length(game)-1 && !reachablenodes[game[i].arc_b])
+                    if (game[i].arc_a > length(game)-2 || !reachablenodes[game[i].arc_a]) || game[i].arc_b > length(game)-2  || (game[i].arc_b > 0 && !reachablenodes[game[i].arc_b])
                         reachablenodes[i] = false
                         noderemoved = true
                     end
@@ -281,7 +281,7 @@ function isbadsubgraph!(reachablenodes::BitVector, queue::Vector{Int}, newqueue:
                 #if the previous if statment did not trigger, try remove due to no out arcs
                 if reachablenodes[i]
                     #if neither arc points to a reachable node, accounting for possible nonexistent second arcs
-                    if (game[i].arc_a > length(game)-2 || !reachablenodes[game[i].arc_a]) && (game[i].arc_b > 0 && game[i].arc_b < length(game)-1 && !reachablenodes[game[i].arc_b])
+                    if (game[i].arc_a > length(game)-2 || !reachablenodes[game[i].arc_a]) && (game[i].arc_b > length(game)-2 || (game[i].arc_b > 0 && !reachablenodes[game[i].arc_b]))
                         reachablenodes[i] = false
                         noderemoved = true
                     end
@@ -302,7 +302,7 @@ function isbadsubgraph!(reachablenodes::BitVector, queue::Vector{Int}, newqueue:
                 end
 
                 #check if proof achieved
-                if (i == origin || i == destination) && !reachablenodes[origin] || !reachablenodes[destination]
+                if (i == origin && !reachablenodes[origin]) || (i == destination && !reachablenodes[destination])
                     return false
                 end
             end

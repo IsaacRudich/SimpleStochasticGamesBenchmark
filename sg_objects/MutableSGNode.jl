@@ -44,7 +44,7 @@ Returns a deep copy of an MutableSGNode
 - `node::MutableSGNode`: the node to be deep copied
 """
 function deepcopy(node::MutableSGNode)
-    return MutableSGNode(node.type, node.arc_a, node.arc_b)
+    return MutableSGNode(node.label, node.type, node.arc_a, node.arc_b)
 end
 
 """
