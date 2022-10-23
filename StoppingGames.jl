@@ -22,5 +22,6 @@ function test(nmax::Int, nmin::Int, navg::Int)
     println()=#
     println(to)
     reset_timer!(to)
+    return game
 end 
 
