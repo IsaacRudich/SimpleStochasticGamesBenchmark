@@ -1,4 +1,4 @@
-struct SGNode
+struct SGNode <: Node
     type    ::NodeTypes
     arc_a    ::Int
     arc_b    ::Int

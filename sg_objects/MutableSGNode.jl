@@ -1,4 +1,4 @@
-mutable struct MutableSGNode
+mutable struct MutableSGNode <: Node
     label    ::Int
     type     ::NodeTypes
     arc_a    ::Int

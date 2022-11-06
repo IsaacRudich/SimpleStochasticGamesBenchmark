@@ -158,7 +158,7 @@ function run_main_loop_to_assign_second_arcs!(game::Vector{MutableSGNode}, paren
                 #add the two starting forbidden elements
                 candidatelist[assignment] = false
                 candidatelist[game[assignment].arc_a] = false
-                @timeit to "second maxmin arcs" if assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, assignment) == -1 
+                @timeit to "second maxmin arcs after failure" if assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, assignment) == -1 
                     #no second arc found add to rerun queue
                     #should never happen
                     verybadnodes[assignment] = true
@@ -258,7 +258,7 @@ function isbadsubgraph!(reachablenodes::BitVector, queue::Vector{Int}, newqueue:
     push!(queue, destination)
 
     #find reachable nodes
-    while !isempty(queue)
+    @timeit to "phase 1" while !isempty(queue)
         for node in queue
             if node != origin
                 if game[node].arc_a < length(game)-3 && !reachablenodes[game[node].arc_a]
@@ -282,7 +282,7 @@ function isbadsubgraph!(reachablenodes::BitVector, queue::Vector{Int}, newqueue:
 
     #iteratively remove nodes until graph is provably good or bad
     noderemoved = true
-    while noderemoved
+    @timeit to "phase 2" while noderemoved
         noderemoved = false
         for i in eachindex(reachablenodes)
             if reachablenodes[i]
@@ -463,6 +463,30 @@ function run_main_loop_to_assign_second_arcs_no_checks!(game::Vector{MutableSGNo
 end
 
 """
+    
+    unmark_average_parents!(badnodes::BitVector, queue::Vector{Int},game::Vector{T},parentmap::Dict{Int, Vector{Int}})where{T<:Node}
+
+# Arguments
+- `badnodes::BitVector`: the marked nodes
+- `queue::Vector{Int}`: the nodes to unmark
+- `game::Vector{T}`: the stopping game
+- `parentmap::Dict{Int, Vector{Int}`: map of nodes (indexes) to parents 
+"""
+function unmark_average_parents!(badnodes::BitVector, queue::Vector{Int},game::Vector{T},parentmap::Dict{Int, Vector{Int}})where{T<:Node}
+    while !isempty(queue)
+        i = pop!(queue)
+        if badnodes[i]
+            badnodes[i] = false
+            @inbounds for parent in parentmap[i]
+                if badnodes[parent] && game[parent].type == average
+                    push!(queue,parent)
+                end
+            end
+        end
+    end
+end
+
+"""
     generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::Int)
 
 Generate a stopping game without trivially solvable nodes
@@ -563,7 +587,62 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
     randomorder = sample(mtracker, length(mtracker), replace = false)
     @timeit to "second arcs" run_main_loop_to_assign_second_arcs_no_checks!(game, parentmap, inzeronodes, candidatelist, randomorder)
     
+    badnodes = trues(length(game))
+    println("num badnodes: ", sum(badnodes), "(no processing)")
+    unmarkqueue = Vector{Int}(length(game)-1:length(game))
+    sizehint!(unmarkqueue, length(game))
+    unmark_average_parents!(badnodes, unmarkqueue,game,parentmap)
+    println("num badnodes: ", sum(badnodes), "(last 4 unmarked)")
+
+    #find the strongly connected components
+    stack = Vector{Int}()
+    sizehint!(stack, length(game))
+    vindex = zeros(Int,length(game))
+    vlowlink = zeros(Int,length(game))
+    vonstack = falses(length(game))
+    sccs = Vector{Vector{Int}}()
+    sizehint!(sccs, length(game))
+    unstable = true
+    sccs = Vector{Vector{Int}}()
+    while unstable
+        unstable = false
+        sccs = tarjans_strongly_connected_components(game,badnodes,stack, vindex, vlowlink, vonstack,sccs)
+        @inbounds for scc in sccs
+            #if the components only has one node there is no loop
+            if length(scc) == 1
+                push!(unmarkqueue,first(scc))
+            else
+                sort!(scc)
+            end
+        end
+        if !isempty(unmarkqueue)
+            unstable = true
+            unmark_average_parents!(badnodes, unmarkqueue,game,parentmap)
+            println("num badnodes: ", sum(badnodes), "(removed unitary components)")
+        end
+    end
+
+
+    println("connected component sizes: ")
+    for scc in sccs
+        println(length(scc))
+    end
+
+
+
+    #now that sccs is stable start from the end and check for badsubgraphs
+    currentnode = findlast(badnodes)
+    @inbounds for scc in sccs
+        if insorted(currentnode, scc)
+
+            break
+        end
+    end
+
+
+    
     #memory pre-allocation for the bad subgraph checker
+    
     reachablenodes = falses(length(game)-2)
     queue = Vector{Int}()
     queuetwo = Vector{Int}()
@@ -575,4 +654,79 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
     println("very bad nodes ", sum(verybadnodes))
 
     return game, parentmap
+end
+
+"""
+    isbadsubgraphwithscc!(reachablenodes::BitVector, queue::Vector{Int}, newqueue::Vector{Int}, game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, origin::Int, destination::Int)
+
+Checks if a partially generated Stopping Game would contain a bad subgraph is the provided arc was added
+The first three parameters do not need to contain accurate information, they are pre-allocated for performance purposes
+Returns::Bool
+
+# Arguments
+- `reachablenodes::BitVector`: A bit vector such that length(reachablenodes) == length(game)-2 
+- `queue::Vector{Int}`:: A list of integers, preferred empty
+- `newqueue::Vector{Int}`: A list of integers, preferred empty
+- `game::Vector{MutableSGNode}`: The partially generated Stopping Game
+- `parentmap::Dict{Int, Vector{Int}},`: A map from nodes to a list of their parents
+- `origin::Int`: The origin of the arc being added
+- `destination::Int`: The destination of the arc being added
+"""
+function isbadsubgraphwithscc!(reachablenodes::BitVector, queue::Vector{Int}, newqueue::Vector{Int}, game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, origin::Int, destination::Int, scc::Vector{Int})
+    #setup reachable nodes list and queue
+    reachablenodes .= false
+    reachablenodes[destination] = true
+    empty!(queue)
+    empty!(newqueue)
+    push!(queue, destination)
+
+    #find reachable nodes
+    @inbounds @simd for i in eachindex(reachablenodes)
+        reachablenodes[i] = insorted(i,scc)
+    end
+
+    #iteratively remove nodes until graph is provably good or bad
+    noderemoved = true
+    @timeit to "phase 2" while noderemoved
+        noderemoved = false
+        for i in eachindex(reachablenodes)
+            if reachablenodes[i]
+                if game[i].type == average
+                    #if either arc of an average node points somewhere not reachable
+                    if (game[i].arc_a > length(game)-2 || !reachablenodes[game[i].arc_a]) || game[i].arc_b > length(game)-2  || (game[i].arc_b > 0 && !reachablenodes[game[i].arc_b])
+                        reachablenodes[i] = false
+                        noderemoved = true
+                    end
+                end
+                #if the previous if statment did not trigger, try remove due to no out arcs
+                if reachablenodes[i]
+                    #if neither arc points to a reachable node, accounting for possible nonexistent second arcs
+                    if (game[i].arc_a > length(game)-2 || !reachablenodes[game[i].arc_a]) && (game[i].arc_b > length(game)-2 || (game[i].arc_b > 0 && !reachablenodes[game[i].arc_b]))
+                        reachablenodes[i] = false
+                        noderemoved = true
+                    end
+                end
+                #if the previous if statment did not trigger, try remove due to no in arcs
+                if reachablenodes[i]
+                    noparent = true
+                    for p in parentmap[i]
+                        if reachablenodes[p]
+                            noparent = false
+                            break
+                        end
+                    end
+                    if noparent
+                        reachablenodes[i] = false
+                        noderemoved = true
+                    end
+                end
+
+                #check if proof achieved
+                if (i == origin && !reachablenodes[origin]) || (i == destination && !reachablenodes[destination])
+                    return false
+                end
+            end
+        end
+    end
+    return true
 end

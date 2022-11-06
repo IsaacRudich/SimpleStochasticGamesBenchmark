@@ -10,18 +10,19 @@ const to = TimerOutput()
 
 include("sg_objects/sg_objects.jl")
 include("io/io.jl")
+include("algorithms/algorithms_main.jl")
 include("generator/generator.jl")
-#include("algorithms/algorithms.jl")
+
 
 function test(nmax::Int, nmin::Int, navg::Int)
-    @timeit to "total" game, parentmap = generate_reduced_stopping_game(nmax,nmin,navg)
+    @timeit to "total" game, parentmap = generate_reduced_stopping_game_efficient(nmax,nmin,navg)
     #println(game)
     #=for (key, value) in parentmap
         print("$key => $value     ")
     end
     println()=#
-    println(to)
+    #println(to)
     reset_timer!(to)
-    return game
+    #return game
 end 
 
