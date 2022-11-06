@@ -21,7 +21,7 @@ function test(nmax::Int, nmin::Int, navg::Int)
         print("$key => $value     ")
     end
     println()=#
-    #println(to)
+    println(to)
     reset_timer!(to)
     #return game
 end 

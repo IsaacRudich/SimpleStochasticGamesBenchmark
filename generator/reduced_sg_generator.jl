@@ -622,27 +622,45 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
     sizehint!(queuetwo, length(game)-2)
 
     #now that sccs is stable start from the end and check for badsubgraphs
+    mtracker = Vector{Int}()
+    sizehint!(mtracker, length(badnodes))
     currentnode = findlast(badnodes)
     boom = 0
     while !isnothing(currentnode)
         @inbounds for scc in sccs
             if insorted(currentnode, scc)
                 if isbadsubgraphwithscc!(reachablenodes, queue, queuetwo, game,  parentmap, currentnode, game[currentnode].arc_b, scc)
+                    deleteat!(parentmap[game[currentnode].arc_b],findfirst(x -> x==currentnode,parentmap[game[currentnode].arc_b]))
                     game[currentnode].arc_b = 0
+                    push!(mtracker, currentnode)
                     boom += 1
                 end
                 unmark_average_parents!(badnodes, [currentnode],game,parentmap)
-                println("num badnodes: ", sum(badnodes), "(bad subgraph checks)")
                 stabilize_tarjans!(unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
+                #println("num badnodes: ", sum(badnodes), "(bad subgraph checks)")
                 break
             end
         end
         currentnode = findlast(badnodes)
     end
 
-    println("num badnodes: ", sum(badnodes), "(should be zero)")
     println("boom:$boom")
+
+    #memory allocation for max/min node second candidate list
+    candidatelist =  falses(length(game)-2)
     verybadnodes = falses(length(game)-2)
+    #get an order for assigning arcs to the remaining nodes
+    randomorder = sample(mtracker, length(mtracker), replace = false)
+
+    inzeronodes = Vector{Int}()
+    sizehint!(inzeronodes, length(game)-4)
+    for (key, value) in parentmap
+        if isempty(value)
+            push!(inzeronodes, key)
+        end
+    end
+    @timeit to "second arcs" run_main_loop_to_assign_second_arcs!(game, parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, randomorder)
+    
 
     println("in-zeros:  ",length(inzeronodes))
     println("very bad nodes ", sum(verybadnodes))
@@ -725,6 +743,20 @@ function isbadsubgraphwithscc!(reachablenodes::BitVector, queue::Vector{Int}, ne
     return true
 end
 
+"""
+    stabilize_tarjans!(unmarkqueue::Vector{Int},sccs::Vector{Vector{Int}}, game::Vector{T},parentmap::Dict{Int, Vector{Int}},badnodes::BitVector, stack::Vector{Int}, vindex::Vector{Int},vlowlink::Vector{Int}, vonstack::BitVector)where{T<:Node}
+    
+
+
+# Arguments
+- `game::Vector{T}`: the SSG to consider
+- `nodestoconsider::BitVector`: nodes that can be included
+- `stack::Vector{Int}`: pre-allocated for performance
+- `vindex::Vector{Int}`: pre-allocated for performance
+- `vlowlink::Vector{Int}`: pre-allocated for performance
+- `vonstack::BitVector`: pre-allocated for performance
+- `sccs::Vector{Vector{Int}}`: pre-allocated for performance
+"""
 function stabilize_tarjans!(unmarkqueue::Vector{Int},sccs::Vector{Vector{Int}}, game::Vector{T},parentmap::Dict{Int, Vector{Int}},badnodes::BitVector, stack::Vector{Int}, vindex::Vector{Int},vlowlink::Vector{Int}, vonstack::BitVector)where{T<:Node}
     unstable = true
     while unstable
@@ -741,7 +773,7 @@ function stabilize_tarjans!(unmarkqueue::Vector{Int},sccs::Vector{Vector{Int}}, 
         if !isempty(unmarkqueue)
             unstable = true
             unmark_average_parents!(badnodes, unmarkqueue,game,parentmap)
-            println("num badnodes: ", sum(badnodes), "(removed unitary components)")
+            #println("num badnodes: ", sum(badnodes), "(removed unitary components)")
         end
     end
 end
