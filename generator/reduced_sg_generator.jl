@@ -602,25 +602,8 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
     vonstack = falses(length(game))
     sccs = Vector{Vector{Int}}()
     sizehint!(sccs, length(game))
-    unstable = true
     sccs = Vector{Vector{Int}}()
-    while unstable
-        unstable = false
-        sccs = tarjans_strongly_connected_components(game,badnodes,stack, vindex, vlowlink, vonstack,sccs)
-        @inbounds for scc in sccs
-            #if the components only has one node there is no loop
-            if length(scc) == 1
-                push!(unmarkqueue,first(scc))
-            else
-                sort!(scc)
-            end
-        end
-        if !isempty(unmarkqueue)
-            unstable = true
-            unmark_average_parents!(badnodes, unmarkqueue,game,parentmap)
-            println("num badnodes: ", sum(badnodes), "(removed unitary components)")
-        end
-    end
+    stabilize_tarjans!(unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
 
 
     println("connected component sizes: ")
@@ -630,24 +613,35 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
 
 
 
-    #now that sccs is stable start from the end and check for badsubgraphs
-    currentnode = findlast(badnodes)
-    @inbounds for scc in sccs
-        if insorted(currentnode, scc)
-
-            break
-        end
-    end
-
-
     
     #memory pre-allocation for the bad subgraph checker
-    
     reachablenodes = falses(length(game)-2)
     queue = Vector{Int}()
     queuetwo = Vector{Int}()
     sizehint!(queue, length(game)-2)
     sizehint!(queuetwo, length(game)-2)
+
+    #now that sccs is stable start from the end and check for badsubgraphs
+    currentnode = findlast(badnodes)
+    boom = 0
+    while !isnothing(currentnode)
+        @inbounds for scc in sccs
+            if insorted(currentnode, scc)
+                if isbadsubgraphwithscc!(reachablenodes, queue, queuetwo, game,  parentmap, currentnode, game[currentnode].arc_b, scc)
+                    game[currentnode].arc_b = 0
+                    boom += 1
+                end
+                unmark_average_parents!(badnodes, [currentnode],game,parentmap)
+                println("num badnodes: ", sum(badnodes), "(bad subgraph checks)")
+                stabilize_tarjans!(unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
+                break
+            end
+        end
+        currentnode = findlast(badnodes)
+    end
+
+    println("num badnodes: ", sum(badnodes), "(should be zero)")
+    println("boom:$boom")
     verybadnodes = falses(length(game)-2)
 
     println("in-zeros:  ",length(inzeronodes))
@@ -729,4 +723,25 @@ function isbadsubgraphwithscc!(reachablenodes::BitVector, queue::Vector{Int}, ne
         end
     end
     return true
+end
+
+function stabilize_tarjans!(unmarkqueue::Vector{Int},sccs::Vector{Vector{Int}}, game::Vector{T},parentmap::Dict{Int, Vector{Int}},badnodes::BitVector, stack::Vector{Int}, vindex::Vector{Int},vlowlink::Vector{Int}, vonstack::BitVector)where{T<:Node}
+    unstable = true
+    while unstable
+        unstable = false
+        sccs = tarjans_strongly_connected_components(game,badnodes,stack, vindex, vlowlink, vonstack,sccs)
+        @inbounds for scc in sccs
+            #if the components only has one node there is no loop
+            if length(scc) == 1
+                push!(unmarkqueue,first(scc))
+            else
+                sort!(scc)
+            end
+        end
+        if !isempty(unmarkqueue)
+            unstable = true
+            unmark_average_parents!(badnodes, unmarkqueue,game,parentmap)
+            println("num badnodes: ", sum(badnodes), "(removed unitary components)")
+        end
+    end
 end
