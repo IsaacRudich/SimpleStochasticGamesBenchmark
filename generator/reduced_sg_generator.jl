@@ -857,7 +857,7 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
         pre_missing_arc_count = length(mtracker)
         post_missing_arc_count =  0
         repeat_count = 0
-        repeat_cap = floor(Int,log(2,length(game)))
+        repeat_cap = min(max(floor(Int,log(2,length(game))/2),2),5)
 
         while !isempty(mtracker) && (pre_missing_arc_count != post_missing_arc_count ||  repeat_count <= repeat_cap)
             if pre_missing_arc_count == post_missing_arc_count
@@ -879,7 +879,16 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
         end
     end
 
-    println("in-zeros:  ",length(inzeronodes))
+    println("in-zeros after iterative random assignment:  ",length(inzeronodes))
 
+    @timeit to "final slow second arc assignment" begin
+    verybadnodes = falses(length(game)-2)
+        #get an order for assigning arcs to the remaining nodes
+        randomorder = sample(mtracker, length(mtracker), replace = false)
+        run_main_loop_to_assign_second_arcs!(game, parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, randomorder)
+    end
+
+    println("in-zeros after all arcs assigned:  ",length(inzeronodes))
+    
     return game, parentmap
 end
