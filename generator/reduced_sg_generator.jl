@@ -258,7 +258,7 @@ function isbadsubgraph!(reachablenodes::BitVector, queue::Vector{Int}, newqueue:
     push!(queue, destination)
 
     #find reachable nodes
-    @timeit to "phase 1" while !isempty(queue)
+    while !isempty(queue)
         for node in queue
             if node != origin
                 if game[node].arc_a < length(game)-3 && !reachablenodes[game[node].arc_a]
@@ -282,7 +282,7 @@ function isbadsubgraph!(reachablenodes::BitVector, queue::Vector{Int}, newqueue:
 
     #iteratively remove nodes until graph is provably good or bad
     noderemoved = true
-    @timeit to "phase 2" while noderemoved
+    while noderemoved
         noderemoved = false
         for i in eachindex(reachablenodes)
             if reachablenodes[i]
@@ -691,6 +691,94 @@ function remove_specific_bad_subgraphs_using_sccs!(mtracker::Vector{Int}, proces
 end
 
 """
+    
+    run_fallback_to_assign_second_arcs!(game::Vector{MutableSGNode}, parentmap::Dict{Int, Vector{Int}}, inzeronodes::Vector{Int}, candidatelist::BitVector, reachablenodes::BitVector, queue::Vector{Int}, queuetwo::Vector{Int}, assignmentorder::Vector{Int})
+
+# Arguments
+- `game::Vector{MutableSGNode}`: The partially generated Stopping Game
+- `parentmap::Dict{Int, Vector{Int}}`: A map from nodes to a list of their parents
+- `inzeronodes::Vector{Int}`: nodes with in-degree zero
+- `candidatelist::BitVector`: A bit vector such that length(candidatelist) == length(game)-2 containing valid candidates for the destination of the arc
+- `reachablenodes::BitVector`: A bit vector such that length(reachablenodes) == length(game)-2 
+- `queue::Vector{Int}`:: A list of integers, preferred empty
+- `queuetwo::Vector{Int}`: A list of integers, preferred empty
+- `assignmentorder::Vector{Int}`: The order to assign arcs in
+"""
+function run_fallback_to_assign_second_arcs!(game::Vector{MutableSGNode}, parentmap::Dict{Int, Vector{Int}}, inzeronodes::Vector{Int}, candidatelist::BitVector, reachablenodes::BitVector, queue::Vector{Int}, queuetwo::Vector{Int}, assignmentorder::Vector{Int})
+    #add the second arcs
+    counter = 0
+    @inbounds for assignment in assignmentorder
+        counter += 1
+        println("assigning arc ",counter, "/",length(assignmentorder))
+        #if there are no in-zero nodes
+        if isempty(inzeronodes)
+            #reset the list
+            candidatelist.=true
+            #add the two starting forbidden elements
+            candidatelist[assignment] = false
+            candidatelist[game[assignment].arc_a] = false
+            assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, assignment)
+        #if there are in-zero nodes
+        else
+            #reset the list
+            candidatelist.=false
+            for node in inzeronodes
+                candidatelist[node] = true
+            end
+            #add the two starting forbidden elements
+            candidatelist[assignment] = false
+            candidatelist[game[assignment].arc_a] = false
+            if assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, assignment) == -1
+                #reset the list to run without in-zeros
+                candidatelist.=true
+                #add the two starting forbidden elements
+                candidatelist[assignment] = false
+                candidatelist[game[assignment].arc_a] = false
+                assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, assignment)
+            end
+        end
+    end
+end
+
+"""
+    assignsecondmaxminarc!(game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, inzeronodes::Vector{Int}, candidatelist::BitVector, reachablenodes::BitVector, queue::Vector{Int}, queuetwo::Vector{Int}, assignment::Int)
+
+Assigns a second arc to a max or min node
+Several parameters are only there so that they are pre-allocated for performance.
+All paramaters except 'assignment' may be modified
+Returns::Int the destination of the new arc
+
+# Arguments
+- `game::Vector{MutableSGNode}`: The partially generated Stopping Game
+- `parentmap::Dict{Int, Vector{Int}},`: A map from nodes to a list of their parents
+- `inzeronodes::Vector{Int}`: nodes with in-degree zero
+- `candidatelist::BitVector`: A bit vector such that length(candidatelist) == length(game)-2 containing valid candidates for the destination of the arc
+- `reachablenodes::BitVector`: A bit vector such that length(reachablenodes) == length(game)-2 
+- `queue::Vector{Int}`:: A list of integers, preferred empty
+- `queuetwo::Vector{Int}`: A list of integers, preferred empty
+- `assignment::Int`: The node getting a second arc
+"""
+function assignsecondmaxminarc!(game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, inzeronodes::Vector{Int}, candidatelist::BitVector, reachablenodes::BitVector, queue::Vector{Int}, queuetwo::Vector{Int}, assignment::Int)
+    #get a new item
+    newnode = getothernode(candidatelist)
+    while newnode != -1
+        game[assignment].arc_b = newnode
+        push!(parentmap[newnode], assignment)
+        if isbadsubgraph!(reachablenodes, queue, queuetwo, game,  parentmap, assignment, newnode)
+            game[assignment].arc_b = 0
+            pop!(parentmap[newnode])
+            candidatelist[newnode] = false
+            newnode = getothernode(candidatelist)
+        else
+            removefromsortedlist!(newnode, inzeronodes)
+            break
+        end
+    end
+
+    return newnode
+end
+
+"""
     generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::Int)
 
 Generate a stopping game without trivially solvable nodes
@@ -857,7 +945,8 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
         pre_missing_arc_count = length(mtracker)
         post_missing_arc_count =  0
         repeat_count = 0
-        repeat_cap = min(max(floor(Int,log(2,length(game))/2),2),5)
+        #repeat_cap = max(floor(Int,log(2,length(game))/2),2)
+        repeat_cap = 4
 
         while !isempty(mtracker) && (pre_missing_arc_count != post_missing_arc_count ||  repeat_count <= repeat_cap)
             if pre_missing_arc_count == post_missing_arc_count
@@ -882,13 +971,12 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
     println("in-zeros after iterative random assignment:  ",length(inzeronodes))
 
     @timeit to "final slow second arc assignment" begin
-    verybadnodes = falses(length(game)-2)
         #get an order for assigning arcs to the remaining nodes
         randomorder = sample(mtracker, length(mtracker), replace = false)
-        run_main_loop_to_assign_second_arcs!(game, parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, randomorder)
+        run_fallback_to_assign_second_arcs!(game, parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, randomorder)
     end
 
     println("in-zeros after all arcs assigned:  ",length(inzeronodes))
-    
+
     return game, parentmap
 end
