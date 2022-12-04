@@ -17,7 +17,6 @@ function generate_reduced_stopping_game(nmax::Int, nmin::Int, navg::Int)
 
     game = Vector{MutableSGNode}(undef,nmax+nmin+navg+2)
     parentmap = Dict{Int, Vector{Int}}()
-    sizehint!(parentmap, length(game))
     avgtracker = Vector{Int}()
     mtracker = Vector{Int}()
     sizehint!(avgtracker, navg)
@@ -491,7 +490,7 @@ end
 """
     isbadsubgraphwithscc!(reachablenodes::BitVector, queue::Vector{Int}, newqueue::Vector{Int}, game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, origin::Int, destination::Int)
 
-Checks if a partially generated Stopping Game would contain a bad subgraph is the provided arc was added
+Checks if a partially generated Stopping Game would contain a bad subgraph if the provided arc was added
 The first three parameters do not need to contain accurate information, they are pre-allocated for performance purposes
 Returns::Bool
 
@@ -831,6 +830,8 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
         end
         push!(avgtracker, length(game)-2)
         push!(avgtracker, length(game)-3)
+
+        sort!(avgtracker)
     end #timeit 
 
     println("Node types assigned")
@@ -867,7 +868,7 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
 
         #initialize average node second candidate list
         nodelist = Vector{Int}(1:length(game))
-
+     
         #assign r average nodes to inzero nodes
         if r != 0
             @inbounds for i in 1:r
@@ -945,8 +946,7 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
         pre_missing_arc_count = length(mtracker)
         post_missing_arc_count =  0
         repeat_count = 0
-        #repeat_cap = max(floor(Int,log(2,length(game))/2),2)
-        repeat_cap = 4
+        repeat_cap = max(floor(Int,log(2,length(game))/2),2)
 
         while !isempty(mtracker) && (pre_missing_arc_count != post_missing_arc_count ||  repeat_count <= repeat_cap)
             if pre_missing_arc_count == post_missing_arc_count
@@ -977,6 +977,28 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
     end
 
     println("in-zeros after all arcs assigned:  ",length(inzeronodes))
+
+
+    @timeit to "final reduction of in-zeros" begin
+        while length(inzeronodes) > 1
+            chosen_nodes = sample(inzeronodes, 2, replace = false)
+            deleteat!(parentmap[game[chosen_nodes[1]].arc_b],findfirst(x -> x==chosen_nodes[1],parentmap[game[chosen_nodes[1]].arc_b]))
+            game[chosen_nodes[1]].arc_b = chosen_nodes[2]
+            push!(parentmap[chosen_nodes[2]], chosen_nodes[1])
+            deleteat!(inzeronodes,searchsortedfirst(inzeronodes,chosen_nodes[2]))
+        end
+    end
+
+    println("all but final in-zero removed:  ",inzeronodes)
+
+    @timeit to "assignment to final in-zero"
+        last_in_zero = first(inzeronodes)
+        trial_order = sample(1:n-4, n-4, replace = false)
+        deleteat!(trial_order, findfirst(x -> x==last_in_zero,trial_order))
+        for node_index in trial_order
+            
+        end
+    end
 
     return game, parentmap
 end
