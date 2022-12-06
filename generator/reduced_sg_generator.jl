@@ -976,27 +976,47 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
         run_fallback_to_assign_second_arcs!(game, parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, randomorder)
     end
 
-    find_bugs(game, parentmap, inzeronodes)
-    println(inzeronodes)
-
     println("in-zeros after all arcs assigned:  ",length(inzeronodes))
 
     @timeit to "final reduction of in-zeros" begin
-        while length(inzeronodes) > 1
-            chosen_nodes = sample(inzeronodes, 2, replace = false)
-            deleteat!(parentmap[game[chosen_nodes[1]].arc_b],findfirst(x -> x==chosen_nodes[1],parentmap[game[chosen_nodes[1]].arc_b]))
-            game[chosen_nodes[1]].arc_b = chosen_nodes[2]
-            push!(parentmap[chosen_nodes[2]], chosen_nodes[1])
-            deleteat!(inzeronodes,searchsortedfirst(inzeronodes,chosen_nodes[2]))
+        potential_parents = copy(inzeronodes)
+        for i in inzeronodes
+            #can't use nodes that have only one out arc as parents
+            if length(parentmap[game[i].arc_b]) == 1
+                deleteat!(potential_parents,searchsortedfirst(potential_parents,i))
+            end
+        end
+        while length(inzeronodes) > 1 && length(potential_parents) > 1
+            new_parent = rand(potential_parents)
+            new_child = rand(inzeronodes)
+            if new_parent == new_child && length(inzeronodes) == 1 && length(potential_parents) == 1
+                break
+            end
+            while new_parent == new_child
+                if length(inzeronodes) == 1
+                    new_parent = rand(potential_parents)
+                else
+                    new_child = rand(inzeronodes)
+                end
+            end
+            deleteat!(
+                parentmap[game[new_parent].arc_b],
+                findfirst(
+                    x -> x==new_parent,
+                    parentmap[game[new_parent].arc_b]
+                )
+            )
+            game[new_parent].arc_b = new_child
+            push!(parentmap[new_child], new_parent)
+            deleteat!(inzeronodes,searchsortedfirst(inzeronodes,new_child))
+            deleteat!(potential_parents,searchsortedfirst(potential_parents,new_parent))
         end
     end
 
-    find_bugs(game, parentmap, inzeronodes)
+    println("number of in-zeros reduced to:  ",length(inzeronodes))
 
-    println("all but final in-zero removed:  ",inzeronodes)
-
-    @timeit to "assignment to final in-zero" begin
-        if !isempty(inzeronodes)
+    @timeit to "assignment to final in-zeros" begin
+        while !isempty(inzeronodes)
             last_in_zero = first(inzeronodes)
             trial_order = sample(1:length(game)-4, length(game)-4, replace = false)
             deleteat!(trial_order, findfirst(x -> x==last_in_zero,trial_order))
@@ -1012,7 +1032,7 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
                     else
                         game[node_index].arc_b = last_in_zero
                         push!(parentmap[last_in_zero], node_index)
-                        empty!(inzeronodes)
+                        deleteat!(inzeronodes, 1)
                         break
                     end
                 end
@@ -1020,15 +1040,13 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
         end
     end
 
-    find_bugs(game, parentmap, inzeronodes)
+    #find_bugs(game, parentmap, inzeronodes)
 
     if isempty(inzeronodes)
         println("Game successfully created!")
     else
         println("Heuristic failed, please try again")
     end
-
-   
 
     return game, parentmap
 end
