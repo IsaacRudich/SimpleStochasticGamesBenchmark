@@ -6,6 +6,7 @@ using JuMP
 using CPLEX
 
 using TimerOutputs
+using Dates
 const to = TimerOutput()
 
 include("sg_objects/sg_objects.jl")
@@ -23,7 +24,6 @@ function test(nmax::Int, nmin::Int, navg::Int)
     println()=#
     println(to)
     reset_timer!(to)
-    return nothing
-    #return game
+    return game
 end 
 

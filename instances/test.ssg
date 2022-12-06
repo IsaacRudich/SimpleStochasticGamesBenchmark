@@ -1,0 +1,40 @@
+# test.ssg
+# created: 2022-12-06
+# using instance generator from Avi Rudich, Isaac Rudich, Rachel Rue
+
+NMAX: 10
+NMIN: 10
+NAVG: 10
+
+1 31 19 average
+2 8 20 minimizer
+3 21 18 average
+4 17 6 maximizer
+5 21 29 minimizer
+6 20 9 average
+7 25 14 minimizer
+8 27 3 maximizer
+9 12 5 average
+10 16 24 maximizer
+11 17 4 average
+12 23 8 minimizer
+13 26 22 maximizer
+14 23 11 average
+15 21 14 maximizer
+16 29 7 minimizer
+17 20 12 maximizer
+18 29 3 maximizer
+19 20 10 minimizer
+20 28 1 average
+21 32 2 average
+22 27 28 maximizer
+23 28 13 maximizer
+24 28 1 maximizer
+25 29 15 minimizer
+26 30 9 minimizer
+27 30 24 minimizer
+28 30 14 minimizer
+29 32 21 average
+30 31 22 average
+31 0 0 terminal0
+32 0 0 terminal1

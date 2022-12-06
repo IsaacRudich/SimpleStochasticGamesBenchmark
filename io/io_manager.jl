@@ -112,7 +112,9 @@ function write_stopping_game(nodes::Vector{SGNode}, filename::String)
     end
 
     file = open(string(@__DIR__ , "/../instances/" , filename),"w")
-        write(file,string(filename,"\n\n"))
+        write(file,string("# ",filename,"\n"))
+        write(file,string("# created: ",Dates.today(),"\n"))
+        write(file,string("# using instance generator from Avi Rudich, Isaac Rudich, Rachel Rue","\n\n"))
         write(file,string("NMAX: ",nmax,"\n"))
         write(file,string("NMIN: ",nmin,"\n"))
         write(file,string("NAVG: ",navg,"\n\n"))
