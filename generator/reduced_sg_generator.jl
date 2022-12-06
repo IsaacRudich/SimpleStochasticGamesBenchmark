@@ -976,8 +976,10 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
         run_fallback_to_assign_second_arcs!(game, parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, randomorder)
     end
 
-    println("in-zeros after all arcs assigned:  ",length(inzeronodes))
+    find_bugs(game, parentmap, inzeronodes)
+    println(inzeronodes)
 
+    println("in-zeros after all arcs assigned:  ",length(inzeronodes))
 
     @timeit to "final reduction of in-zeros" begin
         while length(inzeronodes) > 1
@@ -989,16 +991,64 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
         end
     end
 
+    find_bugs(game, parentmap, inzeronodes)
+
     println("all but final in-zero removed:  ",inzeronodes)
 
-    @timeit to "assignment to final in-zero"
-        last_in_zero = first(inzeronodes)
-        trial_order = sample(1:n-4, n-4, replace = false)
-        deleteat!(trial_order, findfirst(x -> x==last_in_zero,trial_order))
-        for node_index in trial_order
-            
+    @timeit to "assignment to final in-zero" begin
+        if !isempty(inzeronodes)
+            last_in_zero = first(inzeronodes)
+            trial_order = sample(1:length(game)-4, length(game)-4, replace = false)
+            deleteat!(trial_order, findfirst(x -> x==last_in_zero,trial_order))
+            for node_index in trial_order
+                old_child = game[node_index].arc_b
+                #if the node being considered is a single parent to its arc_b node, skip it
+                if length(parentmap[old_child])>1
+                    game[node_index].arc_b = 0
+                    deleteat!(parentmap[old_child],findfirst(x -> x==node_index,parentmap[old_child]))
+                    if isbadsubgraph!(reachablenodes, queue, queuetwo, game,  parentmap, node_index, last_in_zero)
+                        game[node_index].arc_b = old_child
+                        push!(parentmap[old_child], node_index)
+                    else
+                        game[node_index].arc_b = last_in_zero
+                        push!(parentmap[last_in_zero], node_index)
+                        empty!(inzeronodes)
+                        break
+                    end
+                end
+            end
         end
     end
 
+    find_bugs(game, parentmap, inzeronodes)
+
+    if isempty(inzeronodes)
+        println("Game successfully created!")
+    else
+        println("Heuristic failed, please try again")
+    end
+
+   
+
     return game, parentmap
+end
+
+function find_bugs(game, parentmap, inzeronodes)
+     #debug check
+     for node in game 
+        parents = parentmap[node.label]
+        if isempty(parents) && !(node.label in inzeronodes)
+            println("Bug Type 1: ", node.label)
+        end
+        for parent in parents
+            if game[parent].arc_a != node.label && game[parent].arc_b != node.label
+                println("Bug Type 2: ", node.label)
+            end
+        end
+        if node.label != length(game) && node.label != length(game)-1
+            if !(node.label in parentmap[node.arc_a]) || !(node.label in parentmap[node.arc_b])
+                println("Bug Type 3: ", node.label)
+            end
+        end
+    end
 end
