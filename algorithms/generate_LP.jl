@@ -10,7 +10,8 @@ Create and return a JUMP Model (solver:GLPK) with the constraints that define th
 """
 function generate_JuMP_model_min_strategy(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer)
     model = Model(optimizer)
-
+    set_silent(model)
+    
     @variable(model, v[1:length(game)])
 
     for (id, node) in enumerate(game)
