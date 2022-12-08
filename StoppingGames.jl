@@ -3,6 +3,7 @@ using BenchmarkTools
 
 using StatsBase
 using JuMP
+using GLPK
 using CPLEX
 
 using TimerOutputs

@@ -9,6 +9,7 @@ Solve an SSG using Hoffman Karp
 - `optimizer::DataType`: the optimizer that JUMP should use
 """
 function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer)
+	epsilon = eps()
     #strategy initialization
 	min_strat = Dict{Int, Int}()
 
@@ -39,11 +40,11 @@ function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int,
 					a_val = value(v[node.arc_a])
 					b_val = value(v[node.arc_b])
 					node_val = value(v[id])
-					if node_val < a_val
+					if node_val < a_val - epsilon
 						max_strat[id] = node.arc_a
 						node_switched = true
 						switch_counter += 1
-					elseif node_val < b_val
+					elseif node_val < b_val - epsilon
 						max_strat[id] = node.arc_b
 						node_switched = true
 						switch_counter += 1
