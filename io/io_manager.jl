@@ -59,14 +59,14 @@ function parseinput!(input_data)
     navg::Int=0
 
     for i = eachindex(lines)
-        splitLine = split(lines[i], ' ')
-        if length(splitLine) == 2
-            if splitLine[1]=="NMAX:"
-                nmax = parse(Int, splitLine[2])
-            elseif splitLine[1]=="NMIN:"
-                nmin = parse(Int, splitLine[2])
-            elseif splitLine[1]=="NAVG:"
-                navg = parse(Int, splitLine[2])
+        split_line = split(lines[i], ' ')
+        if length(split_line) == 2
+            if split_line[1]=="NMAX:"
+                nmax = parse(Int, split_line[2])
+            elseif split_line[1]=="NMIN:"
+                nmin = parse(Int, split_line[2])
+            elseif split_line[1]=="NAVG:"
+                navg = parse(Int, split_line[2])
             end
             if nmax != 0 && nmin != 0 && navg != 0
                 break
@@ -77,9 +77,13 @@ function parseinput!(input_data)
     #load game
     nodes = Vector{SGNode}(undef,nmax+nmin+navg+2)
     for i = eachindex(lines)
-        splitLine = split(lines[i], ' ')
-        if length(splitLine)==4 && tryparse(Int, splitLine[1])!==nothing && tryparse(Int, splitLine[2])!==nothing && tryparse(Int, splitLine[3])!==nothing && get(node_types,splitLine[4],nothing)!==nothing
-            nodes[parse(Int, splitLine[1])] = SGNode(parse(Int, splitLine[2]),parse(Int, splitLine[3]),node_types[splitLine[4]])
+        split_line = split(lines[i], ' ')
+        if length(split_line)==4 && tryparse(Int, split_line[1])!==nothing && tryparse(Int, split_line[2])!==nothing && tryparse(Int, split_line[3])!==nothing && get(node_types,split_line[4],nothing)!==nothing
+            if length(nodes) >= parse(Int, split_line[1])
+                nodes[parse(Int, split_line[1])] = SGNode(node_types[split_line[4]], parse(Int, split_line[2]),parse(Int, split_line[3]))
+            else
+                push!(nodes, SGNode(node_types[split_line[4]], parse(Int, split_line[2]),parse(Int, split_line[3])))
+            end
         end
     end
 
