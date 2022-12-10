@@ -38,6 +38,20 @@ function solve_game(filename::String; optimizer::DataType = CPLEX.Optimizer)
 
     game = read_stopping_game(filename)
 
+    max = 0
+    min = 0
+    avg = 0
+    for node in game
+        if node.type == minimizer
+            min += 1
+        elseif node.type == maximizer
+            max += 1
+        elseif node.type == average 
+            avg += 1
+        end
+    end
+    println("max:$max min:$min avg:$avg")
+
     println("Using Upwards Strategy")
     max_strat = generate_upwards_max_strategy(game)
     optimal_strategy = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer)

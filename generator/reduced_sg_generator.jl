@@ -1070,3 +1070,48 @@ function find_bugs(game, parentmap, inzeronodes)
         end
     end
 end
+
+function check_for_bad_subgraphs(game::Vector{SGNode})
+    reachablenodes = falses(length(game)-2)
+    queue = Vector{Int}()
+    queuetwo = Vector{Int}()
+    sizehint!(queue, length(game)-2)
+    sizehint!(queuetwo, length(game)-2)
+
+    m_game = Vector{MutableSGNode}()
+    sizehint!(m_game, length(game))
+
+    parentmap = Dict{Int,Vector{Int}}()
+
+    for (i,node) in enumerate(game)
+        parentmap[i] = Vector{Int}()
+    end
+
+    for (i,node) in enumerate(game)
+        push!(m_game, MutableSGNode(i, node.type, node.arc_a, node.arc_b))
+        if node.arc_a > 0
+            push!(parentmap[node.arc_a], i)
+        end
+        if node.arc_b > 0
+            push!(parentmap[node.arc_b], i)
+        end
+    end
+
+    
+
+    for (node_index, node) in enumerate(m_game)
+        old_child = node.arc_b
+        m_game[node_index].arc_b = 0
+        deleteat!(parentmap[old_child],findfirst(x -> x==node_index,parentmap[old_child]))
+        if isbadsubgraph!(reachablenodes, queue, queuetwo, m_game,  parentmap, node_index, old_child)
+            println("BAD SUBGRAPH FOUND!")
+            return true
+        else
+            m_game[node_index].arc_b = old_child
+            push!(parentmap[old_child], node_index)
+        end
+    end
+
+    println("No Bad Subgraphs")
+    return false
+end
