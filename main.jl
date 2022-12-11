@@ -70,5 +70,9 @@ function solve_game(filename::String; optimizer::DataType = CPLEX.Optimizer)
 
     # println()
 
+    println("Using Inverse Optimal Strategy")
+    max_strat = generate_inverse_max_strategy(game, optimal_strategy)
+    optimal_strategy = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer)
+
     return game, optimal_strategy
 end 
