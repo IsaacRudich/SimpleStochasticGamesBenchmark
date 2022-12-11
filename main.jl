@@ -25,11 +25,17 @@ function generate_new_game(nmax::Int, nmin::Int, navg::Int, filename::String; op
 
     println()
 
-    println("Using Random Strategy")
-    max_strat = generate_random_max_strategy(game)
-    optimal_strategy = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer)
+    for i in 1:10
+        println("Using Random Strategy")
+        max_strat = generate_random_max_strategy(game)
+        optimal_strategy = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer)
+    end
 
     println()
+
+    println("Using Inverse Optimal Strategy")
+    max_strat = generate_inverse_max_strategy(game, optimal_strategy)
+    optimal_strategy = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer)
 
     return game, optimal_strategy
 end 

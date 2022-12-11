@@ -1,0 +1,38 @@
+# random_1.ssg
+# created: 2022-12-11
+# using instance generator from Avi Rudich, Isaac Rudich, Rachel Rue
+
+NMAX: 8
+NMIN: 16
+NAVG: 4
+
+1 7 5 minimizer
+2 22 14 minimizer
+3 17 14 maximizer
+4 7 13 maximizer
+5 10 17 minimizer
+6 8 19 maximizer
+7 16 8 minimizer
+8 12 22 minimizer
+9 24 23 minimizer
+10 17 21 average
+11 18 8 minimizer
+12 23 9 minimizer
+13 18 8 maximizer
+14 23 15 maximizer
+15 30 11 average
+16 17 6 maximizer
+17 27 10 minimizer
+18 27 1 minimizer
+19 20 21 minimizer
+20 24 8 minimizer
+21 25 14 minimizer
+22 26 14 maximizer
+23 24 4 minimizer
+24 28 3 maximizer
+25 28 26 minimizer
+26 28 15 minimizer
+27 30 9 average
+28 29 2 average
+29 0 0 terminal0
+30 0 0 terminal1

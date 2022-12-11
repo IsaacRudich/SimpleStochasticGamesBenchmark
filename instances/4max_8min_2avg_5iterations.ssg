@@ -1,0 +1,24 @@
+# 4max_8min_2avg_5iterations.ssg
+# created: 2022-12-11
+# using instance generator from Avi Rudich, Isaac Rudich, Rachel Rue
+
+NMAX: 4
+NMIN: 8
+NAVG: 2
+
+1 4 3 maximizer
+2 10 6 minimizer
+3 7 12 minimizer
+4 5 8 minimizer
+5 11 2 minimizer
+6 13 14 minimizer
+7 9 1 maximizer
+8 11 12 minimizer
+9 12 11 maximizer
+10 13 9 minimizer
+11 13 6 minimizer
+12 14 13 maximizer
+13 16 12 average
+14 15 4 average
+15 0 0 terminal0
+16 0 0 terminal1

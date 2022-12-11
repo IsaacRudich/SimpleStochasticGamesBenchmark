@@ -51,7 +51,7 @@ function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int,
 					end
 				end
 			end
-			println("iteration $i finished")
+			println("iteration $i finished, objective value: ", round(objective_value(model),digits=3))
 		else
 			throw(ArgumentError("Hoffman-Karp Model Generation Failed"))
 		end

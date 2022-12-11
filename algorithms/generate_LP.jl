@@ -27,8 +27,8 @@ function generate_JuMP_model_min_strategy(game::Vector{SGNode},max_strat::Dict{I
     for (id, node) in enumerate(game)
         a = node.arc_a
         b = node.arc_b
-        push!(objective_variables, id)
         if node.type == minimizer
+            push!(objective_variables, id)
             @constraint(model, v[id] <= v[a])
             @constraint(model, v[id] <= v[b])
         elseif node.type == maximizer
