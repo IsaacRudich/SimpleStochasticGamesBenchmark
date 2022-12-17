@@ -82,3 +82,27 @@ function solve_game(filename::String; optimizer::DataType = CPLEX.Optimizer)
 
     return game, optimal_strategy
 end 
+
+function analyze_game(filename::String; optimizer::DataType = CPLEX.Optimizer)
+    game = read_stopping_game(filename)
+
+    max = 0
+    min = 0
+    avg = 0
+    for node in game
+        if node.type == minimizer
+            min += 1
+        elseif node.type == maximizer
+            max += 1
+        elseif node.type == average 
+            avg += 1
+        end
+    end
+    println("max:$max min:$min avg:$avg")
+
+    longest_path_values, longest_paths = get_longest_acyclic_paths_to_max_nodes(game)
+
+    for key in keys(longest_path_values)
+        println(longest_path_values[key]," => ", longest_paths[key])
+    end
+end
