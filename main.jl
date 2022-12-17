@@ -103,6 +103,6 @@ function analyze_game(filename::String; optimizer::DataType = CPLEX.Optimizer)
     longest_path_values, longest_paths = get_longest_acyclic_paths_to_max_nodes(game)
 
     for key in keys(longest_path_values)
-        println(longest_path_values[key]," => ", longest_paths[key])
+        println("Node:",key," => Length:", longest_path_values[key]," => Path:", longest_paths[key])
     end
 end

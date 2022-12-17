@@ -5,6 +5,8 @@ mutable struct PathNode
     children    ::Vector{PathNode}
 end
 
+Base.show(io::IO,node::PathNode) = Base.print(io, "{",node.id," , ",sum(node.visited),"}")
+
 """
     get_path_to_root(node::PathNode)
 
@@ -21,6 +23,7 @@ function get_path_to_root(node::PathNode)
         push!(path, node.id)
         node = node.parent
     end
+    push!(path, node.id)
     reverse!(path)
     return path
 end
@@ -41,13 +44,14 @@ function get_longest_acyclic_path(game::Vector{SGNode}, node_index::Int)
     longest_path = [node_index]
     
     queue = [root_node]
-
+    new_queue = Vector{PathNode}()
     while !isempty(queue)
-        println("queue:", length(queue))
+        empty!(new_queue)
         for node in queue
-            longest_path = get_longest_acyclic_path_subroutine!(node, game[node.id].arc_a, game, queue, longest_path)
-            longest_path = get_longest_acyclic_path_subroutine!(node, game[node.id].arc_b, game, queue, longest_path)
+            longest_path = get_longest_acyclic_path_subroutine!(node, game[node.id].arc_a, game, new_queue, longest_path)
+            longest_path = get_longest_acyclic_path_subroutine!(node, game[node.id].arc_b, game, new_queue, longest_path)
         end
+        queue = copy(new_queue)
     end
 
     return longest_path
