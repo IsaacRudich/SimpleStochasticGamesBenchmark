@@ -100,9 +100,9 @@ function analyze_game(filename::String; optimizer::DataType = CPLEX.Optimizer)
     end
     println("max:$max min:$min avg:$avg")
 
-    longest_path_values, longest_paths = get_longest_acyclic_paths_to_max_nodes(game)
-
+    @time longest_path_values = get_longest_acyclic_paths_to_max_nodes_fast(game)
+    
     for key in keys(longest_path_values)
-        println("Node:",key," => Length:", longest_path_values[key]," => Path:", longest_paths[key])
+        println("ID: ",key," => L: ", longest_path_values[key])
     end
 end
