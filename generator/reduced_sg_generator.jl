@@ -57,7 +57,7 @@ function generate_reduced_stopping_game(nmax::Int, nmin::Int, navg::Int)
 
     #randomly assign the first arc for each nodes
     inzeronodes = Vector{Int}(1:length(game)-2)
-    @timeit to "first arcs" @inbounds for i in 1:length(game)-4
+    @inbounds for i in 1:length(game)-4
         if game[i].type == average
             game[i].arc_a = rand(i+1:length(game))
         else
@@ -80,7 +80,7 @@ function generate_reduced_stopping_game(nmax::Int, nmin::Int, navg::Int)
         @inbounds for i in 1:r
             currentnode = rand(avgtracker)
             removefromsortedlist!(currentnode, avgtracker)
-            @timeit to "second avg arcs" if assignsecondaveragearc!(game,  parentmap, inzeronodes, inzeronodes, currentnode) == -1
+            if assignsecondaveragearc!(game,  parentmap, inzeronodes, inzeronodes, currentnode) == -1
                 i -= 1
                 @inline assignsecondaveragearc!(game,  parentmap, inzeronodes, nodelist, currentnode)
             end
@@ -103,7 +103,7 @@ function generate_reduced_stopping_game(nmax::Int, nmin::Int, navg::Int)
 
     #get an order for assigning arcs to the remaining nodes
     randomorder = sample(mtracker, length(mtracker), replace = false)
-    @timeit to "second arcs" run_main_loop_to_assign_second_arcs!(game, parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, randomorder)
+    run_main_loop_to_assign_second_arcs!(game, parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, randomorder)
     
     println("in-zeros:  ",length(inzeronodes))
     println("very bad nodes ", sum(verybadnodes))
@@ -136,7 +136,7 @@ function run_main_loop_to_assign_second_arcs!(game::Vector{MutableSGNode}, paren
             #add the two starting forbidden elements
             candidatelist[assignment] = false
             candidatelist[game[assignment].arc_a] = false
-            @timeit to "second maxmin arcs" if assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, assignment) == -1
+            if assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, assignment) == -1
                 #no second arc found add to rerun queue
                 #should never happen
                 verybadnodes[assignment] = true
@@ -151,13 +151,13 @@ function run_main_loop_to_assign_second_arcs!(game::Vector{MutableSGNode}, paren
             #add the two starting forbidden elements
             candidatelist[assignment] = false
             candidatelist[game[assignment].arc_a] = false
-            @timeit to "second maxmin arcs" if assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, assignment) == -1
+            if assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, assignment) == -1
                 #reset the list to run without in-zeros
                 candidatelist.=true
                 #add the two starting forbidden elements
                 candidatelist[assignment] = false
                 candidatelist[game[assignment].arc_a] = false
-                @timeit to "second maxmin arcs after failure" if assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, assignment) == -1 
+                if assignsecondmaxminarc!(game,  parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, verybadnodes, assignment) == -1 
                     #no second arc found add to rerun queue
                     #should never happen
                     verybadnodes[assignment] = true
@@ -218,7 +218,7 @@ function assignsecondmaxminarc!(game::Vector{MutableSGNode},  parentmap::Dict{In
     while newnode != -1
         game[assignment].arc_b = newnode
         push!(parentmap[newnode], assignment)
-        @timeit to "badsubgraph check" if isbadsubgraph!(reachablenodes, queue, queuetwo, game,  parentmap, assignment, newnode)
+        if isbadsubgraph!(reachablenodes, queue, queuetwo, game,  parentmap, assignment, newnode)
             game[assignment].arc_b = 0
             pop!(parentmap[newnode])
             candidatelist[newnode] = false
@@ -708,7 +708,7 @@ function run_fallback_to_assign_second_arcs!(game::Vector{MutableSGNode}, parent
     counter = 0
     @inbounds for assignment in assignmentorder
         counter += 1
-        println("assigning arc ",counter, "/",length(assignmentorder))
+        #println("assigning arc ",counter, "/",length(assignmentorder))
         #if there are no in-zero nodes
         if isempty(inzeronodes)
             #reset the list
@@ -787,68 +787,64 @@ Returns::Vector{MutableSGNode}
 - `nmax::Int`: the number of max nodes in the stopping game
 - `nmin::Int`: the number of min nodes in the stopping game
 - `navg::Int`: the number of avg nodes in the stopping game
+- ``: whether or not to print progress
 """
-function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::Int)
-    @timeit to "setup" begin
-        if navg<2
-            println("Reduced stopping games must have at least 2 average nodes")
-            return Vector{MutableSGNode}()
-        end
-
-        game = Vector{MutableSGNode}(undef,nmax+nmin+navg+2)
-        parentmap = Dict{Int, Vector{Int}}()
-        sizehint!(parentmap, length(game))
-        avgtracker = Vector{Int}()
-        mtracker = Vector{Int}()
-        sizehint!(avgtracker, navg)
-        sizehint!(mtracker, nmax+nmin)
-
-        #set terminals
-        game[length(game)] = MutableSGNode(length(game), terminal1, 0, 0)
-        game[length(game)-1] = MutableSGNode(length(game)-1, terminal0, 0, 0)
-
-        #set the last two average nodes
-        game[length(game)-2] = MutableSGNode(length(game)-2, average, length(game)-1, 0)
-        game[length(game)-3] = MutableSGNode(length(game)-3, average, length(game), 0)
+function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::Int; logging_on::Bool=false)
+    if navg<2
+        println("Reduced stopping games must have at least 2 average nodes")
+        return Vector{MutableSGNode}()
     end
 
-    @timeit to "assign node types randomly" begin
-        #randomly assign the types of the remaining nodes
-        randomorder = sample(1:length(game)-4, length(game)-4, replace = false)
+    game = Vector{MutableSGNode}(undef,nmax+nmin+navg+2)
+    parentmap = Dict{Int, Vector{Int}}()
+    sizehint!(parentmap, length(game))
+    avgtracker = Vector{Int}()
+    mtracker = Vector{Int}()
+    sizehint!(avgtracker, navg)
+    sizehint!(mtracker, nmax+nmin)
 
-        @inbounds for (i, assignment) in enumerate(randomorder)
-            if i<=nmax
-                game[assignment] = MutableSGNode(assignment, maximizer, 0, 0)
-                push!(mtracker, assignment)
-            elseif i<=nmax+nmin
-                game[assignment] = MutableSGNode(assignment, minimizer, 0, 0)
-                push!(mtracker, assignment)
-            else
-                game[assignment] = MutableSGNode(assignment, average, 0, 0)
-                push!(avgtracker, assignment)
-            end
+    #set terminals
+    game[length(game)] = MutableSGNode(length(game), terminal1, 0, 0)
+    game[length(game)-1] = MutableSGNode(length(game)-1, terminal0, 0, 0)
+
+    #set the last two average nodes
+    game[length(game)-2] = MutableSGNode(length(game)-2, average, length(game)-1, 0)
+    game[length(game)-3] = MutableSGNode(length(game)-3, average, length(game), 0)
+
+    #randomly assign the types of the remaining nodes
+    randomorder = sample(1:length(game)-4, length(game)-4, replace = false)
+
+    @inbounds for (i, assignment) in enumerate(randomorder)
+        if i<=nmax
+            game[assignment] = MutableSGNode(assignment, maximizer, 0, 0)
+            push!(mtracker, assignment)
+        elseif i<=nmax+nmin
+            game[assignment] = MutableSGNode(assignment, minimizer, 0, 0)
+            push!(mtracker, assignment)
+        else
+            game[assignment] = MutableSGNode(assignment, average, 0, 0)
+            push!(avgtracker, assignment)
         end
-        push!(avgtracker, length(game)-2)
-        push!(avgtracker, length(game)-3)
+    end
+    push!(avgtracker, length(game)-2)
+    push!(avgtracker, length(game)-3)
 
-        sort!(avgtracker)
-    end #timeit 
+    sort!(avgtracker)
 
-    println("Node types assigned")
-
-    @timeit to "setup" begin
-        #setup the parent map
-        @inbounds for node in eachindex(game)
-            parentmap[node] = Vector{Int}()
-        end
-        push!(parentmap[length(game)-1], length(game)-2)
-        push!(parentmap[length(game)], length(game)-3)
-
-        #randomly assign the first arc for each nodes
-        inzeronodes = Vector{Int}(1:length(game)-2)
+    if logging_on
+        println("Node types assigned")
     end
 
-    @timeit to "assign all first arcs" @inbounds for i in 1:length(game)-4
+    #setup the parent map
+    @inbounds for node in eachindex(game)
+        parentmap[node] = Vector{Int}()
+    end
+    push!(parentmap[length(game)-1], length(game)-2)
+    push!(parentmap[length(game)], length(game)-3)
+
+    #randomly assign the first arc for each nodes
+    inzeronodes = Vector{Int}(1:length(game)-2)
+    @inbounds for i in 1:length(game)-4
         if game[i].type == average
             game[i].arc_a = rand(i+1:length(game))
         else
@@ -859,182 +855,185 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
             deleteat!(inzeronodes,searchsortedfirst(inzeronodes,game[i].arc_a))
         end
     end
+    
+    if logging_on
+        println("All first arcs assigned")
+    end
 
-    println("All first arcs assigned")
+    #pick a random number of average nodes to assign to in-zero nodes
+    r = rand(max(length(inzeronodes)-(nmax+nmin),0):min(navg,length(inzeronodes)))
 
-    @timeit to "assign second average arcs" begin
-        #pick a random number of average nodes to assign to in-zero nodes
-        r = rand(max(length(inzeronodes)-(nmax+nmin),0):min(navg,length(inzeronodes)))
-
-        #initialize average node second candidate list
-        nodelist = Vector{Int}(1:length(game))
-     
-        #assign r average nodes to inzero nodes
-        if r != 0
-            @inbounds for i in 1:r
-                currentnode = rand(avgtracker)
-                removefromsortedlist!(currentnode, avgtracker)
-                if assignsecondaveragearc!(game,  parentmap, inzeronodes, inzeronodes, currentnode) == -1
-                    i -= 1
-                    @inline assignsecondaveragearc!(game,  parentmap, inzeronodes, nodelist, currentnode)
-                end
+    #initialize average node second candidate list
+    nodelist = Vector{Int}(1:length(game))
+    
+    #assign r average nodes to inzero nodes
+    if r != 0
+        @inbounds for i in 1:r
+            currentnode = rand(avgtracker)
+            removefromsortedlist!(currentnode, avgtracker)
+            if assignsecondaveragearc!(game,  parentmap, inzeronodes, inzeronodes, currentnode) == -1
+                i -= 1
+                @inline assignsecondaveragearc!(game,  parentmap, inzeronodes, nodelist, currentnode)
             end
         end
-        #assign the remaining average arcs
-        @inbounds for currentnode in avgtracker
-            @inline assignsecondaveragearc!(game,  parentmap, inzeronodes, nodelist, currentnode)
+    end
+    #assign the remaining average arcs
+    @inbounds for currentnode in avgtracker
+        @inline assignsecondaveragearc!(game,  parentmap, inzeronodes, nodelist, currentnode)
+    end
+
+    if logging_on
+        println("Second average arcs assigned")
+    end
+
+    #memory allocation for max/min node second candidate list
+    candidatelist =  falses(length(game)-2)
+
+    #get an order for assigning arcs to the remaining nodes
+    randomorder = sample(mtracker, length(mtracker), replace = false)
+    run_main_loop_to_assign_second_arcs_no_checks!(game, parentmap, inzeronodes, candidatelist, randomorder)  
+
+    if logging_on
+        println("First attempt at second arc assignments finished")
+    end
+
+    badnodes = trues(length(game))
+    unmarkqueue = Vector{Int}(length(game)-1:length(game))
+    sizehint!(unmarkqueue, length(game))
+    unmark_average_parents!(badnodes, unmarkqueue,game,parentmap)
+    badnodes_quick_start = copy(badnodes)
+    #find the strongly connected components
+    stack = Vector{Int}()
+    sizehint!(stack, length(game))
+    vindex = zeros(Int,length(game))
+    vlowlink = zeros(Int,length(game))
+    vonstack = falses(length(game))
+    sccs = Vector{Vector{Int}}()
+    sizehint!(sccs, length(game))
+    stabilize_tarjans!(unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
+
+    if logging_on
+        println("Tarjans stabilized: first iteration")
+        print("    connected component sizes: ")
+        for scc in sccs
+            print(length(scc),"  ")
         end
-    end #timeit
+        println()
+    end
 
-    println("Second average arcs assigned")
+    #memory pre-allocation for the bad subgraph checker
+    reachablenodes = falses(length(game)-2)
+    queue = Vector{Int}()
+    queuetwo = Vector{Int}()
+    sizehint!(queue, length(game)-2)
+    sizehint!(queuetwo, length(game)-2)
 
-    @timeit to "assign second max/min arcs: first pass" begin
-        #memory allocation for max/min node second candidate list
-        candidatelist =  falses(length(game)-2)
+    #now that sccs is stable start from the end and check for badsubgraphs
+    mtracker = Vector{Int}()
+    sizehint!(mtracker, length(badnodes))
+    remove_bad_subgraphs_using_sccs!(mtracker,inzeronodes,reachablenodes,queue, queuetwo, unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
 
-        #get an order for assigning arcs to the remaining nodes
+    if logging_on
+        println("Bad subgraphs removed during first iteration: ",length(mtracker), "\n   In-zeros: ", length(inzeronodes))
+        println()
+    end
+
+    #get an order for assigning arcs to the remaining nodes
+    new_mtracker = Vector{Int}()
+    sizehint!(new_mtracker, length(mtracker))
+    pre_missing_arc_count = length(mtracker)
+    post_missing_arc_count =  0
+    repeat_count = 0
+    repeat_cap = max(floor(Int,log(2,length(game))/2),2)
+
+    while !isempty(mtracker) && (pre_missing_arc_count != post_missing_arc_count ||  repeat_count <= repeat_cap)
+        if pre_missing_arc_count == post_missing_arc_count
+            repeat_count += 1
+        elseif repeat_count != 0
+            repeat_count = 0
+        end
+
+        pre_missing_arc_count = length(mtracker)
         randomorder = sample(mtracker, length(mtracker), replace = false)
         run_main_loop_to_assign_second_arcs_no_checks!(game, parentmap, inzeronodes, candidatelist, randomorder)  
-    end
-
-    println("First attempt at second arc assignments finished")
-
-    @timeit to "tarjans first iteration" begin
-        badnodes = trues(length(game))
-        unmarkqueue = Vector{Int}(length(game)-1:length(game))
-        sizehint!(unmarkqueue, length(game))
-        unmark_average_parents!(badnodes, unmarkqueue,game,parentmap)
-        badnodes_quick_start = copy(badnodes)
-        #find the strongly connected components
-        stack = Vector{Int}()
-        sizehint!(stack, length(game))
-        vindex = zeros(Int,length(game))
-        vlowlink = zeros(Int,length(game))
-        vonstack = falses(length(game))
-        sccs = Vector{Vector{Int}}()
-        sizehint!(sccs, length(game))
+        badnodes .= badnodes_quick_start
         stabilize_tarjans!(unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
-    end
-
-    println("Tarjans stabilized: first iteration")
-    print("    connected component sizes: ")
-    for scc in sccs
-        print(length(scc),"  ")
-    end
-    println()
-
-    @timeit to "bad subgraph removal" begin
-        #memory pre-allocation for the bad subgraph checker
-        reachablenodes = falses(length(game)-2)
-        queue = Vector{Int}()
-        queuetwo = Vector{Int}()
-        sizehint!(queue, length(game)-2)
-        sizehint!(queuetwo, length(game)-2)
-
-        #now that sccs is stable start from the end and check for badsubgraphs
-        mtracker = Vector{Int}()
-        sizehint!(mtracker, length(badnodes))
-        remove_bad_subgraphs_using_sccs!(mtracker,inzeronodes,reachablenodes,queue, queuetwo, unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
-    end
-    println("Bad subgraphs removed during first iteration: ",length(mtracker), "\n   In-zeros: ", length(inzeronodes))
-    #get an order for assigning arcs to the remaining nodes
-    println()
-
-    @timeit to "Iterative random assignment until plateau" begin
-        new_mtracker = Vector{Int}()
-        sizehint!(new_mtracker, length(mtracker))
-        pre_missing_arc_count = length(mtracker)
-        post_missing_arc_count =  0
-        repeat_count = 0
-        repeat_cap = max(floor(Int,log(2,length(game))/2),2)
-
-        while !isempty(mtracker) && (pre_missing_arc_count != post_missing_arc_count ||  repeat_count <= repeat_cap)
-            if pre_missing_arc_count == post_missing_arc_count
-                repeat_count += 1
-            elseif repeat_count != 0
-                repeat_count = 0
-            end
-
-            pre_missing_arc_count = length(mtracker)
-            randomorder = sample(mtracker, length(mtracker), replace = false)
-            run_main_loop_to_assign_second_arcs_no_checks!(game, parentmap, inzeronodes, candidatelist, randomorder)  
-            badnodes .= badnodes_quick_start
-            stabilize_tarjans!(unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
-            remove_specific_bad_subgraphs_using_sccs!(new_mtracker,mtracker,inzeronodes,reachablenodes,queue, queuetwo, unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
-            mtracker = copy(new_mtracker)
-            empty!(new_mtracker)
-            post_missing_arc_count = length(mtracker)
+        remove_specific_bad_subgraphs_using_sccs!(new_mtracker,mtracker,inzeronodes,reachablenodes,queue, queuetwo, unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
+        mtracker = copy(new_mtracker)
+        empty!(new_mtracker)
+        post_missing_arc_count = length(mtracker)
+        if logging_on
             println("Bad subgraphs removed during iteration: ",length(mtracker), "\n   In-zeros: ", length(inzeronodes))
         end
     end
 
-    println("in-zeros after iterative random assignment:  ",length(inzeronodes))
-
-    @timeit to "final slow second arc assignment" begin
-        #get an order for assigning arcs to the remaining nodes
-        randomorder = sample(mtracker, length(mtracker), replace = false)
-        run_fallback_to_assign_second_arcs!(game, parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, randomorder)
+    if logging_on
+        println("in-zeros after iterative random assignment:  ",length(inzeronodes))
     end
 
-    println("in-zeros after all arcs assigned:  ",length(inzeronodes))
+    #get an order for assigning arcs to the remaining nodes
+    randomorder = sample(mtracker, length(mtracker), replace = false)
+    run_fallback_to_assign_second_arcs!(game, parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, randomorder)
 
-    @timeit to "final reduction of in-zeros" begin
-        potential_parents = copy(inzeronodes)
-        for i in inzeronodes
-            #can't use nodes that have only one out arc as parents
-            if length(parentmap[game[i].arc_b]) == 1
-                deleteat!(potential_parents,searchsortedfirst(potential_parents,i))
+    if logging_on
+        println("in-zeros after all arcs assigned:  ",length(inzeronodes))
+    end
+
+    potential_parents = copy(inzeronodes)
+    for i in inzeronodes
+        #can't use nodes that have only one out arc as parents
+        if length(parentmap[game[i].arc_b]) == 1
+            deleteat!(potential_parents,searchsortedfirst(potential_parents,i))
+        end
+    end
+    while length(inzeronodes) > 1 && length(potential_parents) > 1
+        new_parent = rand(potential_parents)
+        new_child = rand(inzeronodes)
+        if new_parent == new_child && length(inzeronodes) == 1 && length(potential_parents) == 1
+            break
+        end
+        while new_parent == new_child
+            if length(inzeronodes) == 1
+                new_parent = rand(potential_parents)
+            else
+                new_child = rand(inzeronodes)
             end
         end
-        while length(inzeronodes) > 1 && length(potential_parents) > 1
-            new_parent = rand(potential_parents)
-            new_child = rand(inzeronodes)
-            if new_parent == new_child && length(inzeronodes) == 1 && length(potential_parents) == 1
-                break
-            end
-            while new_parent == new_child
-                if length(inzeronodes) == 1
-                    new_parent = rand(potential_parents)
-                else
-                    new_child = rand(inzeronodes)
-                end
-            end
-            deleteat!(
-                parentmap[game[new_parent].arc_b],
-                findfirst(
-                    x -> x==new_parent,
-                    parentmap[game[new_parent].arc_b]
-                )
+        deleteat!(
+            parentmap[game[new_parent].arc_b],
+            findfirst(
+                x -> x==new_parent,
+                parentmap[game[new_parent].arc_b]
             )
-            game[new_parent].arc_b = new_child
-            push!(parentmap[new_child], new_parent)
-            deleteat!(inzeronodes,searchsortedfirst(inzeronodes,new_child))
-            deleteat!(potential_parents,searchsortedfirst(potential_parents,new_parent))
-        end
+        )
+        game[new_parent].arc_b = new_child
+        push!(parentmap[new_child], new_parent)
+        deleteat!(inzeronodes,searchsortedfirst(inzeronodes,new_child))
+        deleteat!(potential_parents,searchsortedfirst(potential_parents,new_parent))
     end
 
-    println("number of in-zeros reduced to:  ",length(inzeronodes))
+    if logging_on
+        println("number of in-zeros reduced to:  ",length(inzeronodes))
+    end
 
-    @timeit to "assignment to final in-zeros" begin
-        while !isempty(inzeronodes)
-            last_in_zero = first(inzeronodes)
-            trial_order = sample(1:length(game)-4, length(game)-4, replace = false)
-            deleteat!(trial_order, findfirst(x -> x==last_in_zero,trial_order))
-            for node_index in trial_order
-                old_child = game[node_index].arc_b
-                #if the node being considered is a single parent to its arc_b node, skip it
-                if length(parentmap[old_child])>1
-                    game[node_index].arc_b = 0
-                    deleteat!(parentmap[old_child],findfirst(x -> x==node_index,parentmap[old_child]))
-                    if isbadsubgraph!(reachablenodes, queue, queuetwo, game,  parentmap, node_index, last_in_zero)
-                        game[node_index].arc_b = old_child
-                        push!(parentmap[old_child], node_index)
-                    else
-                        game[node_index].arc_b = last_in_zero
-                        push!(parentmap[last_in_zero], node_index)
-                        deleteat!(inzeronodes, 1)
-                        break
-                    end
+    while !isempty(inzeronodes)
+        last_in_zero = first(inzeronodes)
+        trial_order = sample(1:length(game)-4, length(game)-4, replace = false)
+        deleteat!(trial_order, findfirst(x -> x==last_in_zero,trial_order))
+        for node_index in trial_order
+            old_child = game[node_index].arc_b
+            #if the node being considered is a single parent to its arc_b node, skip it
+            if length(parentmap[old_child])>1
+                game[node_index].arc_b = 0
+                deleteat!(parentmap[old_child],findfirst(x -> x==node_index,parentmap[old_child]))
+                if isbadsubgraph!(reachablenodes, queue, queuetwo, game,  parentmap, node_index, last_in_zero)
+                    game[node_index].arc_b = old_child
+                    push!(parentmap[old_child], node_index)
+                else
+                    game[node_index].arc_b = last_in_zero
+                    push!(parentmap[last_in_zero], node_index)
+                    deleteat!(inzeronodes, 1)
+                    break
                 end
             end
         end
@@ -1043,9 +1042,14 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
     #find_bugs(game, parentmap, inzeronodes)
 
     if isempty(inzeronodes)
-        println("Game successfully created!")
+        if logging_on
+            println("Game successfully created!")
+        end
     else
-        println("Heuristic failed, please try again")
+        if logging_on
+            println("Heuristic failed, Trying again.")
+        end
+        return generate_reduced_stopping_game_efficient(nmax, nmin, navg, logging_on=logging_on)
     end
 
     return game, parentmap

@@ -1,30 +1,14 @@
-using Revise
-using BenchmarkTools
-
 using StatsBase
 using JuMP
 using GLPK
 using CPLEX
 
-using TimerOutputs
 using Dates
-const to = TimerOutput()
 
 include("sg_objects/sg_objects.jl")
 include("io/io.jl")
 include("algorithms/algorithms_main.jl")
 include("generator/generator.jl")
+include("main/main.jl")
 
-
-function test(nmax::Int, nmin::Int, navg::Int)
-    @timeit to "total" game, parentmap = generate_reduced_stopping_game_efficient(nmax,nmin,navg)
-    #println(game)
-    #=for (key, value) in parentmap
-        print("$key => $value     ")
-    end
-    println()=#
-    println(to)
-    reset_timer!(to)
-    return game
-end 
-
+generate_worst_games(128, 128, 256, 10, 100, 100, "128_128_256/128_128_256", optimizer = CPLEX.Optimizer, logging_on=false)

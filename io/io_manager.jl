@@ -91,15 +91,16 @@ function parseinput!(input_data)
 end
 
 """
-    write_stopping_game(nodes::Vector{SGNode}, filename::String)
+    write_stopping_game(nodes::Vector{SGNode}, filename::String; num_iterations::Union{Nothing, Int})
 
 Create a file with the given SSG
 
 # Arguments
 - `nodes::Vector{SGNode}`: The graph to write to the file
 - `filename::String`: The name of the file (do not include an extension, that is done automatically)
+- `num_iterations::Union{Nothing, Int}`: if it is not nothing, a line will be added to the file recording this number
 """
-function write_stopping_game(nodes::Vector{SGNode}, filename::String)
+function write_stopping_game(nodes::Vector{SGNode}, filename::String; num_iterations::Union{Nothing, Int}=nothing)
     filepath = string(@__DIR__ , "/../instances/" , filename)
     nmax::Int=0
     nmin::Int=0
@@ -119,6 +120,9 @@ function write_stopping_game(nodes::Vector{SGNode}, filename::String)
         write(file,string("# ",filename,"\n"))
         write(file,string("# created: ",Dates.today(),"\n"))
         write(file,string("# using instance generator from Avi Rudich, Isaac Rudich, Rachel Rue","\n\n"))
+        if !isnothing(num_iterations)
+            write(file,string("# worst known Hoffman-Karp seed converges in: $num_iterations","\n\n"))
+        end
         write(file,string("NMAX: ",nmax,"\n"))
         write(file,string("NMIN: ",nmin,"\n"))
         write(file,string("NAVG: ",navg,"\n\n"))

@@ -1,5 +1,5 @@
 """
-    hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer)
+    hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true, log_switches::Bool=false)
 
 Solve an SSG using Hoffman Karp
 
@@ -7,8 +7,10 @@ Solve an SSG using Hoffman Karp
 - `game::Vector{SGNode}`: The SSG
 - `max_strat::Dict{Int, Int}`: the starting max strategy
 - `optimizer::DataType`: the optimizer that JUMP should use
+- `logging_on::Bool`: whether or not to log basic progress
+- `log_switches::Bool`: whether or not to print switchable nodes, default is false
 """
-function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer)	
+function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true, log_switches::Bool=false)	
 	epsilon = eps()
     #strategy initialization
 	min_strat = Dict{Int, Int}()
@@ -16,6 +18,8 @@ function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int,
 	#main algorithm loop
 	node_switched = true
 	i = 0
+	switched_nodes = Vector{Int}()
+	sizehint!(switched_nodes, length(keys(max_strat)))
 	while node_switched
 		i += 1
 		node_switched = false
@@ -44,19 +48,37 @@ function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int,
 						max_strat[id] = node.arc_a
 						node_switched = true
 						switch_counter += 1
+						if log_switches
+							push!(switched_nodes, id)
+						end
 					elseif node_val < b_val - epsilon
 						max_strat[id] = node.arc_b
 						node_switched = true
 						switch_counter += 1
+						if log_switches
+							push!(switched_nodes, id)
+						end
 					end
 				end
 			end
-			println("iteration $i finished, objective value: ", round(objective_value(model),digits=3))
+			if logging_on
+				println("iteration $i finished, objective value: ", round(objective_value(model),digits=3))
+			end
+			if log_switches
+				sort!(switched_nodes)
+				print("Switched Nodes:")
+				for e in switched_nodes
+					print(" ",e)
+				end
+				println()
+			end
 		else
 			throw(ArgumentError("Hoffman-Karp Model Generation Failed"))
 		end
 	end
-	println("Hoffman Karp Iterations: $i")
+	if logging_on
+		println("Hoffman Karp Iterations: $i")
+	end
 
-	return merge(max_strat, min_strat)
+	return merge(max_strat, min_strat), i
 end

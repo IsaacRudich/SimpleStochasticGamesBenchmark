@@ -210,7 +210,16 @@ function get_longest_acyclic_paths_to_max_nodes_light(game::Vector{SGNode})
 end
 
 
+"""
+    get_longest_acyclic_path_recursive(game::Vector{SGNode}, node_index::Int)
 
+Get the longest acyclic path to a terminal node
+Returns Vector{Int}
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `node_index::Int`: the index of the node to start the path from
+"""
 function get_longest_acyclic_path_recursive(game::Vector{SGNode}, node_index::Int)
     visited = falses(length(game))
     visited[node_index] = true
@@ -221,6 +230,18 @@ function get_longest_acyclic_path_recursive(game::Vector{SGNode}, node_index::In
     return longest_path
 end
 
+"""
+    get_longest_acyclic_path_recursive_subroutine!(game::Vector{SGNode}, node_index::Int, visited::BitVector, longest_path::Int)
+
+Subroutine of get_longest_acyclic_path that performs a depth first search
+Returns Vector{Int}
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `node_index::Int`: the index of the child node in game
+- `visited::BitVector`: the visited nodes
+- `longest_path::Int`: the length of the longest path discovered so far
+"""
 function get_longest_acyclic_path_recursive_subroutine!(game::Vector{SGNode}, node_index::Int, visited::BitVector, longest_path::Int)
     if !visited[node_index]  #no cycles
         #if the new node is a terminal 
@@ -240,6 +261,15 @@ function get_longest_acyclic_path_recursive_subroutine!(game::Vector{SGNode}, no
     return longest_path
 end
 
+"""
+    get_longest_acyclic_paths_to_max_nodes_recursive(game::Vector{SGNode})
+
+Get the longest acyclic path from all of the max nodes to a terminal
+Returns Dict{Int, Int}
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+"""
 function get_longest_acyclic_paths_to_max_nodes_recursive(game::Vector{SGNode})
     longest_path_values = Dict{Int, Int}()
 
