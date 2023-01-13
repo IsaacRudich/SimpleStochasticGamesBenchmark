@@ -14,6 +14,9 @@ function generate_worst_games(nmax::Int, nmin::Int, navg::Int, num_to_write::Int
     for i in 1:num_to_generate
         println("Starting Generation: $i")
         game = generate_new_game(nmax, nmin, navg)
+
+        write_stopping_game(game, string(filename, "_working.ssg"), num_iterations = 1)
+
         iterations = get_most_HK_iterations(game, attempts=num_strategy_attempts,optimizer = optimizer, logging_on=false)
         placement = searchsortedfirst(matching_iterations, iterations)
         insert!(matching_iterations, placement, iterations)

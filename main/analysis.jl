@@ -64,3 +64,37 @@ function analyze_longest_paths(filename::String)
         println("ID: ",key," => Length: ", longest_path_values[key])
     end
 end
+
+
+"""
+    compare_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+
+Tries many random seed strtageies for Hoffman-Karp and compares the run time of HK to Mod-HK
+Returns {Int} the largest number of iterations found
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `attempts::Int`: The number of random strategies to try
+- `optimizer::DataType`: the optimizer that JUMP should use
+- `logging_on::Bool`: whether or not to log basic progress
+"""
+function compare_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    parentmap = get_parent_map(game)
+	
+    for i in 1:attempts
+        avg_node_order = generate_random_average_nodes_order(game)
+        max_strat = generate_max_strategy_from_average_order(game, avg_node_order, parentmap)
+        print("Starting HK")
+        optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on)
+        print("   Starting Mod-HK")
+        mod_optimal_strategy, mod_iterations = mod_hoffman_karp_switch_max_nodes(game,avg_node_order, optimizer = optimizer, logging_on = true)
+        useless, check  = hoffman_karp_switch_max_nodes(game,mod_optimal_strategy, optimizer = optimizer, logging_on = logging_on)
+        println("Should be 0: ",check)
+        println("HK: ", iterations,  " Mod-HK: ",mod_iterations)
+    end
+
+end 
+
+function run_HK_comparison(filename::String; attempts::Int=100)
+    compare_HK_iterations(read_stopping_game(filename),attempts=attempts)
+end
