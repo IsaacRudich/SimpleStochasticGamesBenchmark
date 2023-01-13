@@ -15,7 +15,6 @@ function mod_hoffman_karp_switch_max_nodes(game::Vector{SGNode},average_node_ord
     #strategy initialization
 	parentmap = get_parent_map(game)
 	max_strat = generate_max_strategy_from_average_order(game, average_node_order, parentmap)
-	min_strat = Dict{Int, Int}()
 
 	#main algorithm loop
 	node_switched = true
@@ -29,7 +28,6 @@ function mod_hoffman_karp_switch_max_nodes(game::Vector{SGNode},average_node_ord
 	    model = generate_JuMP_model_min_strategy(game,max_strat, optimizer = optimizer)
 	    optimize!(model)
 		v = all_variables(model)
-	    empty!(min_strat)
 		if termination_status(model) == MOI.OPTIMAL
 			switch_counter = 0
 			#check if optimal
@@ -46,6 +44,8 @@ function mod_hoffman_karp_switch_max_nodes(game::Vector{SGNode},average_node_ord
 				end
 			end
 
+			max_strat = new_max_strat
+
 			if logging_on
 				println("iteration $i finished, objective value: ", round(objective_value(model),digits=3))
 			end
@@ -60,10 +60,18 @@ function mod_hoffman_karp_switch_max_nodes(game::Vector{SGNode},average_node_ord
 		else
 			throw(ArgumentError("Hoffman-Karp Model Generation Failed"))
 		end
+		if !node_switched
+			for (id,node) in enumerate(game)
+				if value(v[id]) != 0
+					print("$id->",value(v[id])," ")
+				end
+			end
+			println("\n\n")
+		end
 	end
 	if logging_on
 		println("Hoffman Karp Iterations: $i")
 	end
 
-	return merge(max_strat, min_strat), i
+	return max_strat, i
 end

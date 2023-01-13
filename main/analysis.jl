@@ -84,13 +84,13 @@ function compare_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer
     for i in 1:attempts
         avg_node_order = generate_random_average_nodes_order(game)
         max_strat = generate_max_strategy_from_average_order(game, avg_node_order, parentmap)
-        print("Starting HK")
         optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on)
-        print("   Starting Mod-HK")
-        mod_optimal_strategy, mod_iterations = mod_hoffman_karp_switch_max_nodes(game,avg_node_order, optimizer = optimizer, logging_on = true)
+        mod_optimal_strategy, mod_iterations = mod_hoffman_karp_switch_max_nodes(game,avg_node_order, optimizer = optimizer, logging_on = logging_on)
+        
         useless, check  = hoffman_karp_switch_max_nodes(game,mod_optimal_strategy, optimizer = optimizer, logging_on = logging_on)
-        println("Should be 0: ",check)
-        println("HK: ", iterations,  " Mod-HK: ",mod_iterations)
+    
+        print("   Should be 1:",check)
+        println("   HK:", iterations,  "   Mod-HK:",mod_iterations)
     end
 
 end 
