@@ -72,14 +72,14 @@ function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int,
 				end
 				println()
 			end
-			if !node_switched
-				for (id,node) in enumerate(game)
-					if value(v[id]) != 0
-						print("$id->",value(v[id])," ")
-					end
-				end
-				println("\n\n")
-			end
+			# if !node_switched
+			# 	for (id,node) in enumerate(game)
+			# 		if value(v[id]) != 0
+			# 			print("$id->",value(v[id])," ")
+			# 		end
+			# 	end
+			# 	println("\n\n")
+			# end
 		else
 			throw(ArgumentError("Hoffman-Karp Model Generation Failed"))
 		end

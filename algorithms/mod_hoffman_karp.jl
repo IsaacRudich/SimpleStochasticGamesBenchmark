@@ -60,14 +60,14 @@ function mod_hoffman_karp_switch_max_nodes(game::Vector{SGNode},average_node_ord
 		else
 			throw(ArgumentError("Hoffman-Karp Model Generation Failed"))
 		end
-		if !node_switched
-			for (id,node) in enumerate(game)
-				if value(v[id]) != 0
-					print("$id->",value(v[id])," ")
-				end
-			end
-			println("\n\n")
-		end
+		# if !node_switched
+		# 	for (id,node) in enumerate(game)
+		# 		if value(v[id]) != 0
+		# 			print("$id->",value(v[id])," ")
+		# 		end
+		# 	end
+		# 	println("\n\n")
+		# end
 	end
 	if logging_on
 		println("Hoffman Karp Iterations: $i")

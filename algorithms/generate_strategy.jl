@@ -124,6 +124,25 @@ function generate_random_average_nodes_order(game::Vector{SGNode})
 end
 
 """
+    generate_true_random_average_nodes_order(game::Vector{SGNode})
+
+Create a random ordering of average nodes
+The order is highest to lowest
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+"""
+function generate_true_random_average_nodes_order(game::Vector{SGNode})
+    average_nodes = Vector{Int}()
+    @inbounds for (id,node) in enumerate(game)
+        if node.type == average
+            push!(average_nodes, id)
+        end
+    end
+    shuffle!(average_nodes)
+    return average_nodes
+end
+
+"""
     generate_max_strategy_from_average_order(game::Vector{SGNode}, average_node_order::Vector{Int}, parentmap::Dict{Int, Vector{Int}})
 
 Create a max strategy from an ordering of average nodes
@@ -134,103 +153,62 @@ Create a max strategy from an ordering of average nodes
 - `parentmap::Dict{Int, Vector{Int}}`: map of nodes to their parents
 """
 function generate_max_strategy_from_average_order(game::Vector{SGNode}, average_node_order::Vector{Int}, parentmap::Dict{Int, Vector{Int}})
-    labels = Dict{Int,Int}()
-    labeled = falses(length(game)-2)
-
-    average_to_max = Dict{Int, Vector{Int}}()
-    average_to_min = Dict{Int, Vector{Int}}()
+    labeled = zeros(length(game)-2)
 
     @inbounds for avg_node_id in average_node_order
-        average_to_max[avg_node_id] = Vector{Int}()
-        average_to_min[avg_node_id] = Vector{Int}()
-        labels[avg_node_id] = avg_node_id
         labeled[avg_node_id] = true
-
-        for parent_id in parentmap[avg_node_id]
-            parent_node = game[parent_id]
-            if parent_node.type == maximizer
-                push!(average_to_max[avg_node_id], parent_id)
-            elseif parent_node.type == minimizer
-                push!(average_to_min[avg_node_id], parent_id)
-            end
-        end
     end
 
     queue = Vector{Int}()
-    new_queue = Vector{Int}()
     sizehint!(queue, length(game))
-    sizehint!(new_queue, length(game))
 
-    while sum(labeled) < length(game)-2
-        @inbounds for avg_node_id in average_node_order
-            #setup queue from known set
-            empty!(queue)
-            for node_id in average_to_max[avg_node_id]
-                push!(queue, node_id)
-            end
-
-            while !isempty(queue)
-                for id in queue
-                    if !labeled[id]
-                        labels[id] = avg_node_id
-                        labeled[id] = true
-                        for parent_id in parentmap[id]
-                            parent_node = game[parent_id]
-                            if parent_node.type == maximizer && !labeled[parent_id]
-                                push!(new_queue, parent_id)
-                            elseif parent_node.type == minimizer && !labeled[parent_id]
-                                push!(average_to_min[labels[id]], parent_id)
-                            end
+    @inbounds for avg_node_id in average_node_order
+        push!(queue, avg_node_id)
+        while !isempty(queue)
+            current_node_id = pop!(queue)
+            
+            for parent_id in parentmap[current_node_id]
+                parent_node = game[parent_id]
+                if labeled[parent_id]==0
+                    if parent_node.type == maximizer 
+                        if parent_node.arc_a == current_node_id
+                            labeled[parent_id] = 1
+                        elseif parent_node.arc_b == current_node_id
+                            labeled[parent_id] = 2
+                        else
+                            throw(error("SOMETHING HAS GONE WRONG"))
+                        end
+                        push!(queue, parent_id)
+                    elseif parent_node.type == minimizer
+                        if parent_node.arc_a == current_node_id
+                            labeled[parent_id] = 2
+                        elseif parent_node.arc_b == current_node_id
+                            labeled[parent_id] = 1
+                        else
+                            throw(error("SOMETHING HAS GONE WRONG"))
                         end
                     end
-                end
-                queue = copy(new_queue)
-                empty!(new_queue)
-            end #end while loop
-        end
-        for key in keys(average_to_max)
-            average_to_max[key] = Vector{Int}()
-        end
-
-        @inbounds for avg_node_id in reverse(average_node_order)
-            #setup queue from known set
-            empty!(queue)
-            for node_id in average_to_min[avg_node_id]
-                push!(queue, node_id)
-            end
-
-            while !isempty(queue)
-                for id in queue
-                    if !labeled[id]
-                        labels[id] = avg_node_id
-                        labeled[id] = true
-                        for parent_id in parentmap[id]
-                            parent_node = game[parent_id]
-                            if parent_node.type == minimizer && !labeled[parent_id]
-                                push!(new_queue, parent_id)
-                            elseif parent_node.type == maximizer && !labeled[parent_id]
-                                push!(average_to_max[labels[id]], parent_id)
-                            end
-                        end
+                elseif parent_node.type == minimizer
+                    if labeled[parent_id] == 1 && parent_node.arc_a == current_node_id
+                        push!(queue, parent_id)
+                    elseif labeled[parent_id] == 2 && parent_node.arc_b == current_node_id
+                        push!(queue, parent_id)
                     end
                 end
-                queue = copy(new_queue)
-                empty!(new_queue)
-            end #end while loop
+            end
         end
-        for key in keys(average_to_min)
-            average_to_min[key] = Vector{Int}()
-        end
-    end#end while
+    end
 
     max_strat = Dict{Int,Int}()
 
     @inbounds for (id,node) in enumerate(game)
         if node.type == maximizer
-            if labels[node.arc_a] == labels[id]
+            if labeled[id] == 1
                 max_strat[id] = node.arc_a
-            else
+            elseif labeled[id] == 2
                 max_strat[id] = node.arc_b
+            else
+                throw(error("SOMETHING HAS GONE WRONG"))
             end
         end
     end
