@@ -1,5 +1,5 @@
 """
-    hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true, log_switches::Bool=false)
+	hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true, log_switches::Bool=false, log_values::Bool=false)	
 
 Solve an SSG using Hoffman Karp
 
@@ -9,8 +9,9 @@ Solve an SSG using Hoffman Karp
 - `optimizer::DataType`: the optimizer that JUMP should use
 - `logging_on::Bool`: whether or not to log basic progress
 - `log_switches::Bool`: whether or not to print switchable nodes, default is false
+- `log_values::Bool`: whether or not to print the optimal values
 """
-function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true, log_switches::Bool=false)	
+function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true, log_switches::Bool=false, log_values::Bool=false)	
 	epsilon = eps()
     #strategy initialization
 	min_strat = Dict{Int, Int}()
@@ -72,14 +73,29 @@ function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int,
 				end
 				println()
 			end
-			# if !node_switched
-			# 	for (id,node) in enumerate(game)
-			# 		if value(v[id]) != 0
-			# 			print("$id->",value(v[id])," ")
-			# 		end
-			# 	end
-			# 	println("\n\n")
-			# end
+			if !node_switched && log_values
+				println("Zeros:")
+				for (id,node) in enumerate(game)
+					if value(v[id]) == 0
+						print(id," ")
+					end
+				end
+				println()
+				println("Ones:")
+				for (id,node) in enumerate(game)
+					if value(v[id]) == 1
+						print(id," ")
+					end
+				end
+				println()
+				println("Other:")
+				for (id,node) in enumerate(game)
+					if value(v[id]) != 0 && value(v[id]) != 1
+						print("$id->",value(v[id])," ")
+					end
+				end
+				println("\n\n")
+			end
 		else
 			throw(ArgumentError("Hoffman-Karp Model Generation Failed"))
 		end

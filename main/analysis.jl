@@ -82,8 +82,8 @@ function compare_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer
     parentmap = get_parent_map(game)
 	
     for i in 1:attempts
-        #avg_node_order = generate_random_average_nodes_order(game)
-        avg_node_order = generate_true_random_average_nodes_order(game)
+        avg_node_order = generate_random_average_nodes_order(game)
+        #avg_node_order = generate_true_random_average_nodes_order(game)
         max_strat = generate_max_strategy_from_average_order(game, avg_node_order, parentmap)
         optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on)
         mod_optimal_strategy, mod_iterations = mod_hoffman_karp_switch_max_nodes(game,avg_node_order, optimizer = optimizer, logging_on = logging_on)
@@ -93,7 +93,7 @@ function compare_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer
         tag = " n"
 
         if iterations < mod_iterations
-            tag = " HK BROKE ME!!!"
+            tag = " HK Wins!!!"
         end
 
         print("   Should be 1:",check)
@@ -104,4 +104,33 @@ end
 
 function run_HK_comparison(filename::String; attempts::Int=100)
     compare_HK_iterations(read_stopping_game(filename),attempts=attempts)
+end
+
+
+function test_ones(filename::String = "128_128_32/128_128_32_6.ssg",optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false, log_values = true)
+    game::Vector{SGNode} = read_stopping_game(filename)
+    parentmap = get_parent_map(game)
+
+    ones_vector = find_ones_or_zeros(true, game, parentmap)
+    zeros_vector = find_ones_or_zeros(false, game, parentmap)
+    print("Ones: ")
+    for i in 1:lastindex(ones_vector)
+        if ones_vector[i]
+            print(i," ")
+        end
+    end
+    println("\n")
+    print("Zeros: ")
+    for i in 1:lastindex(ones_vector)
+        if zeros_vector[i]
+            print(i," ")
+        end
+    end
+    println("\n\n")
+
+    
+    avg_node_order = generate_random_average_nodes_order(game)
+    max_strat = generate_max_strategy_from_average_order(game, avg_node_order, parentmap)
+    optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on,log_values=log_values)
+    # mod_optimal_strategy, mod_iterations = mod_hoffman_karp_switch_max_nodes(game,avg_node_order, optimizer = optimizer, logging_on = logging_on, log_values=log_values)
 end

@@ -1,5 +1,5 @@
 """
-	mod_hoffman_karp_switch_max_nodes(game::Vector{SGNode},average_node_order::Vector{Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true, log_switches::Bool=false)	
+	mod_hoffman_karp_switch_max_nodes(game::Vector{SGNode},average_node_order::Vector{Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true, log_switches::Bool=false,log_values::Bool=false)	
 
 Solve an SSG using a Modified Hoffman Karp that skips iterations by jumping to the strategy implied by each average node order
 
@@ -9,8 +9,9 @@ Solve an SSG using a Modified Hoffman Karp that skips iterations by jumping to t
 - `optimizer::DataType`: the optimizer that JUMP should use
 - `logging_on::Bool`: whether or not to log basic progress
 - `log_switches::Bool`: whether or not to print switchable nodes, default is false
+- `log_values::Bool`: whether or not to print the optimal values
 """
-function mod_hoffman_karp_switch_max_nodes(game::Vector{SGNode},average_node_order::Vector{Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true, log_switches::Bool=false)	
+function mod_hoffman_karp_switch_max_nodes(game::Vector{SGNode},average_node_order::Vector{Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true, log_switches::Bool=false,log_values::Bool=false)	
 	epsilon = eps()
     #strategy initialization
 	parentmap = get_parent_map(game)
@@ -60,14 +61,29 @@ function mod_hoffman_karp_switch_max_nodes(game::Vector{SGNode},average_node_ord
 		else
 			throw(ArgumentError("Hoffman-Karp Model Generation Failed"))
 		end
-		# if !node_switched
-		# 	for (id,node) in enumerate(game)
-		# 		if value(v[id]) != 0
-		# 			print("$id->",value(v[id])," ")
-		# 		end
-		# 	end
-		# 	println("\n\n")
-		# end
+		if !node_switched && log_values
+			println("Zeros:")
+			for (id,node) in enumerate(game)
+				if value(v[id]) == 0
+					print(id," ")
+				end
+			end
+			println()
+			println("Ones:")
+			for (id,node) in enumerate(game)
+				if value(v[id]) == 1
+					print(id," ")
+				end
+			end
+			println()
+			println("Other:")
+			for (id,node) in enumerate(game)
+				if value(v[id]) != 0 && value(v[id]) != 1
+					print("$id->",value(v[id])," ")
+				end
+			end
+			println("\n\n")
+		end
 	end
 	if logging_on
 		println("Hoffman Karp Iterations: $i")
