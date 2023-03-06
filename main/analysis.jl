@@ -107,7 +107,17 @@ function run_HK_comparison(filename::String; attempts::Int=100)
 end
 
 
-function test_ones(filename::String = "128_128_32/128_128_32_6.ssg",optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false, log_values = true)
+
+
+
+
+
+
+
+
+
+
+function test_ones(filename::String = "64_64_32/64_64_32_1.ssg",optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false, log_values = true)
     game::Vector{SGNode} = read_stopping_game(filename)
     parentmap = get_parent_map(game)
 
@@ -133,4 +143,14 @@ function test_ones(filename::String = "128_128_32/128_128_32_6.ssg",optimizer::D
     max_strat = generate_max_strategy_from_average_order(game, avg_node_order, parentmap)
     optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on,log_values=log_values)
     # mod_optimal_strategy, mod_iterations = mod_hoffman_karp_switch_max_nodes(game,avg_node_order, optimizer = optimizer, logging_on = logging_on, log_values=log_values)
+end
+
+function check_min_methods(filename::String = "64_64_32/64_64_32_1.ssg",optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false, log_values = true)
+    game::Vector{SGNode} = read_stopping_game(filename)
+    parentmap = get_parent_map(game)
+
+    avg_node_order = generate_random_average_nodes_order(game)
+
+    mod_optimal_strategy, mod_iterations = mod_hoffman_karp_switch_max_nodes(game,avg_node_order, optimizer = optimizer, logging_on = logging_on, log_values=log_values)
+    mod_optimal_strategy_2, mod_iterations_2 = mod_hoffman_karp_switch_min_nodes(game,avg_node_order, optimizer = optimizer, logging_on = logging_on, log_values=log_values)
 end

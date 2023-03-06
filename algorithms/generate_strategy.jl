@@ -215,3 +215,78 @@ function generate_max_strategy_from_average_order(game::Vector{SGNode}, average_
 
     return max_strat
 end
+
+"""
+    generate_min_strategy_from_average_order(game::Vector{SGNode}, average_node_order::Vector{Int}, parentmap::Dict{Int, Vector{Int}})
+
+Create a min strategy from an ordering of average nodes
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `average_node_order::Vector{Int}`: list of average node ids, sorted highest to lowest
+- `parentmap::Dict{Int, Vector{Int}}`: map of nodes to their parents
+"""
+function generate_min_strategy_from_average_order(game::Vector{SGNode}, average_node_order::Vector{Int}, parentmap::Dict{Int, Vector{Int}})
+    reverse!(average_node_order)
+    labeled = zeros(length(game)-2)
+
+    @inbounds for avg_node_id in average_node_order
+        labeled[avg_node_id] = true
+    end
+
+    queue = Vector{Int}()
+    sizehint!(queue, length(game))
+
+    @inbounds for avg_node_id in average_node_order
+        push!(queue, avg_node_id)
+        while !isempty(queue)
+            current_node_id = pop!(queue)
+            
+            for parent_id in parentmap[current_node_id]
+                parent_node = game[parent_id]
+                if labeled[parent_id]==0
+                    if parent_node.type == minimizer
+                        if parent_node.arc_a == current_node_id
+                            labeled[parent_id] = 1
+                        elseif parent_node.arc_b == current_node_id
+                            labeled[parent_id] = 2
+                        else
+                            throw(error("SOMETHING HAS GONE WRONG"))
+                        end
+                        push!(queue, parent_id)
+                    elseif parent_node.type == maximizer
+                        if parent_node.arc_a == current_node_id
+                            labeled[parent_id] = 2
+                        elseif parent_node.arc_b == current_node_id
+                            labeled[parent_id] = 1
+                        else
+                            throw(error("SOMETHING HAS GONE WRONG"))
+                        end
+                    end
+                elseif parent_node.type == maximizer
+                    if labeled[parent_id] == 1 && parent_node.arc_a == current_node_id
+                        push!(queue, parent_id)
+                    elseif labeled[parent_id] == 2 && parent_node.arc_b == current_node_id
+                        push!(queue, parent_id)
+                    end
+                end
+            end
+        end
+    end
+
+    min_strat = Dict{Int,Int}()
+
+    @inbounds for (id,node) in enumerate(game)
+        if node.type == minimizer
+            if labeled[id] == 1
+                min_strat[id] = node.arc_a
+            elseif labeled[id] == 2
+                min_strat[id] = node.arc_b
+            else
+                throw(error("SOMETHING HAS GONE WRONG"))
+            end
+        end
+    end
+
+    return min_strat
+end

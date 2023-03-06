@@ -256,7 +256,8 @@ function isbadsubgraph!(reachablenodes::BitVector, queue::Vector{Int}, newqueue:
     empty!(newqueue)
     push!(queue, destination)
 
-    #find reachable nodes
+    #finds all reachable nodes in breadth first search
+    #excludes the last 4 search
     while !isempty(queue)
         for node in queue
             if node != origin
@@ -1024,14 +1025,14 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
             old_child = game[node_index].arc_b
             #if the node being considered is a single parent to its arc_b node, skip it
             if length(parentmap[old_child])>1
-                game[node_index].arc_b = 0
+                game[node_index].arc_b = last_in_zero
+                push!(parentmap[last_in_zero], node_index)
                 deleteat!(parentmap[old_child],findfirst(x -> x==node_index,parentmap[old_child]))
                 if isbadsubgraph!(reachablenodes, queue, queuetwo, game,  parentmap, node_index, last_in_zero)
                     game[node_index].arc_b = old_child
+                    pop!(parentmap[last_in_zero])
                     push!(parentmap[old_child], node_index)
                 else
-                    game[node_index].arc_b = last_in_zero
-                    push!(parentmap[last_in_zero], node_index)
                     deleteat!(inzeronodes, 1)
                     break
                 end
@@ -1104,15 +1105,13 @@ function check_for_bad_subgraphs(game::Vector{SGNode})
     
 
     for (node_index, node) in enumerate(m_game)
-        old_child = node.arc_b
-        m_game[node_index].arc_b = 0
-        deleteat!(parentmap[old_child],findfirst(x -> x==node_index,parentmap[old_child]))
-        if isbadsubgraph!(reachablenodes, queue, queuetwo, m_game,  parentmap, node_index, old_child)
-            println("BAD SUBGRAPH FOUND!")
-            return true
-        else
-            m_game[node_index].arc_b = old_child
-            push!(parentmap[old_child], node_index)
+        if node_index < length(game)-1
+            if isbadsubgraph!(reachablenodes, queue, queuetwo, m_game,  parentmap, node_index, node.arc_b)
+                println("BAD SUBGRAPH FOUND!")
+                println(node_index)
+                println(node)
+                return true
+            end
         end
     end
 
