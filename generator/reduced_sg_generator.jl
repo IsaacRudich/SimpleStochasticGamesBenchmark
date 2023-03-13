@@ -260,7 +260,7 @@ function isbadsubgraph!(reachablenodes::BitVector, queue::Vector{Int}, newqueue:
     #excludes the last 4 search
     while !isempty(queue)
         for node in queue
-            if node != origin
+            if node != origin || game[node].type == average
                 if game[node].arc_a < length(game)-3 && !reachablenodes[game[node].arc_a]
                     reachablenodes[game[node].arc_a] = true
                     push!(newqueue, game[node].arc_a)
@@ -692,9 +692,9 @@ function remove_specific_bad_subgraphs_using_sccs!(mtracker::Vector{Int}, proces
                     end
                     game[currentnode].arc_b = 0
                     push!(mtracker, currentnode)
+                    stabilize_tarjans!(unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
                 end
-                unmark_average_parents!(badnodes, [currentnode],game,parentmap)
-                stabilize_tarjans!(unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
+                #unmark_average_parents!(badnodes, [currentnode],game,parentmap)
                 #println("num badnodes: ", sum(badnodes), "(bad subgraph checks)")
                 break
             end
@@ -947,8 +947,8 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
     sizehint!(mtracker, length(badnodes))
     remove_bad_subgraphs_using_sccs!(mtracker,inzeronodes,reachablenodes,queue, queuetwo, unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
     
-    check_for_bad_subgraphs(game)
-    println("Checked")
+    # check_for_bad_subgraphs(game)
+    # println("Checked")
 
     if logging_on
         println("Bad subgraphs removed during first iteration: ",length(mtracker), "\n   In-zeros: ", length(inzeronodes))
@@ -984,8 +984,8 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
         end
     end
 
-    check_for_bad_subgraphs(game)
-    println("Checked2")
+    # check_for_bad_subgraphs(game)
+    # println("Checked2")
 
     if logging_on
         println("in-zeros after iterative random assignment:  ",length(inzeronodes))
@@ -994,6 +994,10 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
     #get an order for assigning arcs to the remaining nodes
     randomorder = sample(mtracker, length(mtracker), replace = false)
     run_fallback_to_assign_second_arcs!(game, parentmap, inzeronodes, candidatelist, reachablenodes, queue, queuetwo, randomorder)
+
+    # check_for_bad_subgraphs(game)
+    # println("Checked3")
+
 
     if logging_on
         println("in-zeros after all arcs assigned:  ",length(inzeronodes))
@@ -1030,11 +1034,20 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
         push!(parentmap[new_child], new_parent)
         deleteat!(inzeronodes,searchsortedfirst(inzeronodes,new_child))
         deleteat!(potential_parents,searchsortedfirst(potential_parents,new_parent))
+        if new_child in potential_parents
+            deleteat!(
+                potential_parents,
+                findfirst(x -> x==new_child,potential_parents)
+            )
+        end
     end
 
     if logging_on
         println("number of in-zeros reduced to:  ",length(inzeronodes))
     end
+
+    # check_for_bad_subgraphs(game)
+    # println("Checked4")
 
     while !isempty(inzeronodes)
         last_in_zero = first(inzeronodes)
@@ -1059,10 +1072,10 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
         end
     end
 
-    check_for_bad_subgraphs(game)
-    println("Checked End")
+    # check_for_bad_subgraphs(game)
+    # println("Checked End")
 
-    #find_bugs(game, parentmap, inzeronodes)
+    # find_bugs(game, parentmap, inzeronodes)
 
     if isempty(inzeronodes)
         if logging_on
@@ -1184,4 +1197,14 @@ function check_for_bad_subgraphs(game::Union{Vector{SGNode},Vector{MutableSGNode
 
     println("No Bad Subgraphs")
     return false
+end
+
+
+function find_stupid(d,b,c)
+    while true
+        a, parentmap = generate_reduced_stopping_game_efficient(d, b, c; logging_on=false)
+        if check_for_bad_subgraphs(a)
+            return a
+        end
+    end
 end

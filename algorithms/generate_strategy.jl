@@ -21,6 +21,28 @@ function generate_upwards_max_strategy(game::Vector{SGNode})
 end
 
 """
+    generate_upwards_min_strategy(game::Vector{SGNode})
+
+Create a min node strategy that always points to the highest indexed node
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+"""
+function generate_upwards_min_strategy(game::Vector{SGNode})
+    min_strat = Dict{Int,Int}()
+    for (id, node) in enumerate(game)
+        if node.type == minimizer
+            if node.arc_a > node.arc_b
+                min_strat[id] = node.arc_a
+            else
+                min_strat[id] = node.arc_b
+            end
+        end
+    end
+    return min_strat
+end
+
+"""
     generate_downwards_max_strategy(game::Vector{SGNode})
 
 Create a max node strategy that always points to the lowest indexed node
@@ -40,6 +62,28 @@ function generate_downwards_max_strategy(game::Vector{SGNode})
         end
     end
     return max_strat
+end
+
+"""
+    generate_downwards_min_strategy(game::Vector{SGNode})
+
+Create a min node strategy that always points to the lowest indexed node
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+"""
+function generate_downwards_min_strategy(game::Vector{SGNode})
+    min_strat = Dict{Int,Int}()
+    for (id, node) in enumerate(game)
+        if node.type == minimizer
+            if node.arc_a > node.arc_b
+                min_strat[id] = node.arc_b
+            else
+                min_strat[id] = node.arc_a
+            end
+        end
+    end
+    return min_strat
 end
 
 """
@@ -66,6 +110,29 @@ function generate_random_max_strategy(game::Vector{SGNode})
 end
 
 """
+    generate_random_min_strategy(game::Vector{SGNode})
+
+Create a min node strategy that is random
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+"""
+function generate_random_min_strategy(game::Vector{SGNode})
+    min_strat = Dict{Int,Int}()
+    for (id, node) in enumerate(game)
+        if node.type == minimizer
+            choice = rand([0,1])
+            if choice == 0
+                min_strat[id] = node.arc_b
+            else
+                min_strat[id] = node.arc_a
+            end
+        end
+    end
+    return min_strat
+end
+
+"""
     generate_inverse_max_strategy(game::Vector{SGNode}, strat::Dict{Int,Int})
 
 Create a max node strategy that inverses an existing strategy
@@ -86,6 +153,29 @@ function generate_inverse_max_strategy(game::Vector{SGNode}, strat::Dict{Int,Int
         end
     end
     return max_strat
+end
+
+"""
+    generate_inverse_min_strategy(game::Vector{SGNode}, strat::Dict{Int,Int})
+
+Create a min node strategy that inverses an existing strategy
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `strat::Dict{Int,Int}`: the strategy to inverse
+"""
+function generate_inverse_min_strategy(game::Vector{SGNode}, strat::Dict{Int,Int})
+    min_strat = Dict{Int,Int}()
+    for (id, node) in enumerate(game)
+        if node.type == minimizer
+            if node.arc_a == strat[id]
+                min_strat[id] = node.arc_b
+            else
+                min_strat[id] = node.arc_a
+            end
+        end
+    end
+    return min_strat
 end
 
 """
