@@ -17,6 +17,11 @@ function generate_worst_games(nmax::Int, nmin::Int, navg::Int, num_to_write::Int
 
         write_stopping_game(game, string(filename, "_working.ssg"), num_iterations = 1)
 
+        if check_for_bad_subgraphs(game)
+            println("BAD SUBGRAPHH")
+            return
+        end
+
         iterations = get_most_HK_iterations(game, attempts=num_strategy_attempts,optimizer = optimizer, logging_on=false)
         placement = searchsortedfirst(matching_iterations, iterations)
         insert!(matching_iterations, placement, iterations)

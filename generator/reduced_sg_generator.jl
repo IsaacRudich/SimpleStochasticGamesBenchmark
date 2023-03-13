@@ -296,7 +296,7 @@ function isbadsubgraph!(reachablenodes::BitVector, queue::Vector{Int}, newqueue:
                 #if the previous if statment did not trigger, try remove due to no out arcs
                 if reachablenodes[i]
                     #if neither arc points to a reachable node, accounting for possible nonexistent second arcs
-                    if (game[i].arc_a > length(game)-2 || !reachablenodes[game[i].arc_a]) && (game[i].arc_b > length(game)-2 || (game[i].arc_b > 0 && !reachablenodes[game[i].arc_b]))
+                    if (game[i].arc_a > length(game)-2 || !reachablenodes[game[i].arc_a]) && (game[i].arc_b > length(game)-2 || (game[i].arc_b > 0 && !reachablenodes[game[i].arc_b]) || game[i].arc_b <= 0)
                         reachablenodes[i] = false
                         noderemoved = true
                     end
@@ -323,6 +323,13 @@ function isbadsubgraph!(reachablenodes::BitVector, queue::Vector{Int}, newqueue:
             end
         end
     end
+    # print("Bad Subgraph in: ")
+    # for (i,val) in enumerate(reachablenodes)
+    #     if val
+    #         print(i," ")
+    #     end
+    # end
+    # println()
     return true
 end
 
@@ -533,7 +540,7 @@ function isbadsubgraphwithscc!(reachablenodes::BitVector, queue::Vector{Int}, ne
                 #if the previous if statment did not trigger, try remove due to no out arcs
                 if reachablenodes[i]
                     #if neither arc points to a reachable node, accounting for possible nonexistent second arcs
-                    if (game[i].arc_a > length(game)-2 || !reachablenodes[game[i].arc_a]) && (game[i].arc_b > length(game)-2 || (game[i].arc_b > 0 && !reachablenodes[game[i].arc_b]))
+                    if (game[i].arc_a > length(game)-2 || !reachablenodes[game[i].arc_a]) && (game[i].arc_b > length(game)-2 || (game[i].arc_b > 0 && !reachablenodes[game[i].arc_b]) || game[i].arc_b <= 0)
                         reachablenodes[i] = false
                         noderemoved = true
                     end
@@ -584,19 +591,22 @@ function stabilize_tarjans!(unmarkqueue::Vector{Int},sccs::Vector{Vector{Int}}, 
     unstable = true
     while unstable
         unstable = false
-        sccs = tarjans_strongly_connected_components(game,badnodes,stack, vindex, vlowlink, vonstack,sccs)
+        tarjans_strongly_connected_components!(game,badnodes,stack, vindex, vlowlink, vonstack,sccs)
+      
         @inbounds for scc in sccs
             #if the components only has one node there is no loop
             if length(scc) == 1
                 push!(unmarkqueue,first(scc))
-            else
-                sort!(scc)
             end
         end
         if !isempty(unmarkqueue)
-            unstable = true
+            unstable = true 
             unmark_average_parents!(badnodes, unmarkqueue,game,parentmap)
         end
+    end
+
+    for scc in sccs
+        sort!(scc)
     end
 end
 
@@ -623,8 +633,11 @@ Remove all bad subgraphs from the graph by iterating over the second arcs and re
 """
 function remove_bad_subgraphs_using_sccs!(mtracker::Vector{Int},inzeronodes::Vector{Int},reachablenodes::BitVector,queue::Vector{Int}, queuetwo::Vector{Int}, unmarkqueue::Vector{Int},sccs::Vector{Vector{Int}}, game::Vector{T},parentmap::Dict{Int, Vector{Int}},badnodes::BitVector, stack::Vector{Int}, vindex::Vector{Int},vlowlink::Vector{Int}, vonstack::BitVector)where{T<:Node}
     empty!(mtracker)
-    currentnode = findlast(badnodes)
-    while !isnothing(currentnode)
+    last_index_checked = length(badnodes)
+
+    while last_index_checked-1>0 && !isnothing(findlast(badnodes[1:last_index_checked-1]))
+        currentnode = findlast(badnodes[1:last_index_checked-1])
+        last_index_checked = currentnode
         @inbounds for scc in sccs
             if insorted(currentnode, scc)
                 if isbadsubgraphwithscc!(reachablenodes, queue, queuetwo, game,  parentmap, currentnode, game[currentnode].arc_b, scc)
@@ -634,14 +647,13 @@ function remove_bad_subgraphs_using_sccs!(mtracker::Vector{Int},inzeronodes::Vec
                     end
                     game[currentnode].arc_b = 0
                     push!(mtracker, currentnode)
+                    # unmark_average_parents!(badnodes, [currentnode],game,parentmap)
+                    stabilize_tarjans!(unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
                 end
-                unmark_average_parents!(badnodes, [currentnode],game,parentmap)
-                stabilize_tarjans!(unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
                 #println("num badnodes: ", sum(badnodes), "(bad subgraph checks)")
                 break
             end
         end
-        currentnode = findlast(badnodes)
     end
 end
 
@@ -782,6 +794,7 @@ end
     generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::Int)
 
 Generate a stopping game without trivially solvable nodes
+This function has a bug somehwere that causes certain bad subgraphs to be missed
 Returns::Vector{MutableSGNode}
 
 # Arguments
@@ -933,6 +946,9 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
     mtracker = Vector{Int}()
     sizehint!(mtracker, length(badnodes))
     remove_bad_subgraphs_using_sccs!(mtracker,inzeronodes,reachablenodes,queue, queuetwo, unmarkqueue,sccs, game,parentmap,badnodes, stack, vindex,vlowlink, vonstack)
+    
+    check_for_bad_subgraphs(game)
+    println("Checked")
 
     if logging_on
         println("Bad subgraphs removed during first iteration: ",length(mtracker), "\n   In-zeros: ", length(inzeronodes))
@@ -967,6 +983,9 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
             println("Bad subgraphs removed during iteration: ",length(mtracker), "\n   In-zeros: ", length(inzeronodes))
         end
     end
+
+    check_for_bad_subgraphs(game)
+    println("Checked2")
 
     if logging_on
         println("in-zeros after iterative random assignment:  ",length(inzeronodes))
@@ -1040,6 +1059,9 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
         end
     end
 
+    check_for_bad_subgraphs(game)
+    println("Checked End")
+
     #find_bugs(game, parentmap, inzeronodes)
 
     if isempty(inzeronodes)
@@ -1055,6 +1077,42 @@ function generate_reduced_stopping_game_efficient(nmax::Int, nmin::Int, navg::In
 
     return game, parentmap
 end
+
+"""
+    remove_bad_subgraphs_slow!(mtracker::Vector{Int},inzeronodes::Vector{Int},reachablenodes::BitVector,queue::Vector{Int}, queuetwo::Vector{Int}, game::Vector{T},parentmap::Dict{Int, Vector{Int}},badnodes::BitVector)where{T<:Node}
+
+Remove all bad subgraphs from the graph by iterating over the b arcs and removing any that are contained in a bad subgraph
+
+# Arguments
+- `mtracker::Vector{Int}`: the list of nodes removed by this function, pre-allocated for performance
+- `inzeronodes::Vector{Int}`: list of nodes with in degree zero
+- `reachablenodes::BitVector`: A bit vector such that length(reachablenodes) == length(game)-2, pre-allocated for performance
+- `queue::Vector{Int}`:: A list of integers, preferred empty
+- `queuetwo::Vector{Int}`: A list of integers, preferred empty
+- `game::Vector{T}`: the SSG to consider
+- `parentmap::Dict{Int, Vector{Int}}`: map off node (indexes) to parent (indexes)
+- `badnodes::BitVector`: nodes that can be included
+"""
+function remove_bad_subgraphs_slow!(mtracker::Vector{Int},inzeronodes::Vector{Int},reachablenodes::BitVector,queue::Vector{Int}, queuetwo::Vector{Int}, game::Vector{T},parentmap::Dict{Int, Vector{Int}},badnodes::BitVector)where{T<:Node}
+    empty!(mtracker)
+    for (currentnode, isbad) in enumerate(badnodes)
+        if isbad && isbadsubgraph!(reachablenodes, queue, queuetwo, game,  parentmap, currentnode, game[currentnode].arc_b)
+            deleteat!(parentmap[game[currentnode].arc_b],findfirst(x -> x==currentnode,parentmap[game[currentnode].arc_b]))
+            if isempty(parentmap[game[currentnode].arc_b])
+                insert!(inzeronodes,searchsortedfirst(inzeronodes,game[currentnode].arc_b),game[currentnode].arc_b)
+            end
+            game[currentnode].arc_b = 0
+            push!(mtracker, currentnode)
+        end
+    end
+end
+
+
+
+
+
+
+
 
 function find_bugs(game, parentmap, inzeronodes)
      #debug check
@@ -1076,7 +1134,16 @@ function find_bugs(game, parentmap, inzeronodes)
     end
 end
 
-function check_for_bad_subgraphs(game::Vector{SGNode})
+
+"""
+    check_for_bad_subgraphs(game::Union{Vector{SGNode},Vector{MutableSGNode}})
+
+Debug function to verify games are valid
+
+# Arguments
+- `game::Vector{T}`: the SSG to consider
+"""
+function check_for_bad_subgraphs(game::Union{Vector{SGNode},Vector{MutableSGNode}})
     reachablenodes = falses(length(game)-2)
     queue = Vector{Int}()
     queuetwo = Vector{Int}()
@@ -1105,11 +1172,11 @@ function check_for_bad_subgraphs(game::Vector{SGNode})
     
 
     for (node_index, node) in enumerate(m_game)
-        if node_index < length(game)-1
+        if node.type!=average && node_index < length(game)-1 && node.arc_b > 0 && node.arc_b < length(game)-1
             if isbadsubgraph!(reachablenodes, queue, queuetwo, m_game,  parentmap, node_index, node.arc_b)
                 println("BAD SUBGRAPH FOUND!")
-                println(node_index)
-                println(node)
+                println("Parent of Subgraph: ",node_index)
+                # println(node)
                 return true
             end
         end

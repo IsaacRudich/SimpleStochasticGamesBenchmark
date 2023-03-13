@@ -1,5 +1,5 @@
 """
-    tarjans_strongly_connected_components(game::Vector{T})where{T<:Node}
+    tarjans_strongly_connected_components!(game::Vector{T})where{T<:Node}
     
 Uses tarjan's linear time algorithm for finding strongly connected components in a directed graph
 Citation: Tarjan, Robert. "Depth-first search and linear graph algorithms." SIAM journal on computing 1.2 (1972): 146-160
@@ -15,7 +15,7 @@ Returns sccs::Vector{Vector{Int}}, a list of strongly connected components
 - `vonstack::BitVector`: pre-allocated for performance
 - `sccs::Vector{Vector{Int}}`: pre-allocated for performance
 """
-function tarjans_strongly_connected_components(game::Vector{T},nodestoconsider::BitVector, stack::Vector{Int}, vindex::Vector{Int},vlowlink::Vector{Int}, vonstack::BitVector,sccs::Vector{Vector{Int}})where{T<:Node}
+function tarjans_strongly_connected_components!(game::Vector{T},nodestoconsider::BitVector, stack::Vector{Int}, vindex::Vector{Int},vlowlink::Vector{Int}, vonstack::BitVector,sccs::Vector{Vector{Int}})where{T<:Node}
     index = 1
     empty!(stack)
     vindex .= zero(Int)
