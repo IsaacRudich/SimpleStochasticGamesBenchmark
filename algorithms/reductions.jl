@@ -116,8 +116,6 @@ function remove_ones_and_zeros(game::Vector{SGNode}, parentmap::Dict{Int, Vector
         node.arc_b = indexmap[node.arc_b]
     end
 
-    println(m_game)
-
     return getstaticgame(m_game)
 end
 
@@ -188,4 +186,36 @@ function sort_into_sccs(game::Vector{SGNode})
 
     reverse!(orderedsccs)
     return orderedsccs
+end
+
+"""
+    reindex_by_sccs(game::Vector{SGNode},orderedsccs::Vector{Vector{Int}})
+
+A method that reindexes an SSG based on an ordered list of SCCs
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `orderedsccs::Vector{Vector{Int}}`: the sccs
+"""
+function reindex_by_sccs(game::Vector{SGNode},orderedsccs::Vector{Vector{Int}})
+    #reindex the remaining nodes
+    indexmap = Dict{Int, Int}(0 => 0)
+    counter = 1
+    for scc in orderedsccs
+        for e in scc
+            indexmap[e] = counter
+            counter += 1
+        end
+    end
+
+    m_game = getmutablegame(game)
+
+    for node in m_game
+        node.label = indexmap[node.label]
+        node.arc_a = indexmap[node.arc_a]
+        node.arc_b = indexmap[node.arc_b]
+    end
+
+    sort!(m_game, by = x -> x.label)
+    return getstaticgame(m_game)
 end

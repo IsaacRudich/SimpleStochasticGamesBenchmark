@@ -119,10 +119,16 @@ function reduce_game(filename::String = "64_64_32/64_64_32_10.ssg")
     parentmap = get_parent_map(game)
 
     reducedgame = remove_ones_and_zeros(game, parentmap)
+    orderedsccs = sort_into_sccs(reducedgame)
+    reducedgame = reindex_by_sccs(reducedgame,orderedsccs)
     write_stopping_game(reducedgame, string(filename,"_r.ssg"))
 
     orderedsccs = sort_into_sccs(reducedgame)
+    
     for scc in orderedsccs
-        println(scc)
+        for e in scc
+            print(e, " ")
+        end
+        println()
     end
 end
