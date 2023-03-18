@@ -53,7 +53,7 @@ end
 Returns a deep copy of an MutableSGNode array
 
 # Arguments
-- `node::Vector{MutableSGNode}`: the nodes to be deep copied
+- `nodes::Vector{MutableSGNode}`: the nodes to be deep copied
 """
 function deepcopy(nodes::Vector{MutableSGNode})
     newnodes = Vector{MutableSGNode}(undef,length(nodes))

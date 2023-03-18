@@ -135,6 +135,19 @@ function compare_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer
 
 end 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 function run_HK_comparison(filename::String; attempts::Int=100)
     compare_HK_iterations(read_stopping_game(filename),attempts=attempts)
 end
