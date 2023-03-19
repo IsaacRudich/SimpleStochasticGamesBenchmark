@@ -1,0 +1,22 @@
+# 4_4_8_m_working.ssg
+# created: 2023-03-19
+# using instance generator from Avi Rudich, Isaac Rudich, Rachel Rue
+
+NMAX: 1
+NMIN: 0
+NAVG: 5
+
+1 4 2 maximizer
+2 5 3 average
+3 2 1 average
+--------------------------------------
+4 7 8 average
+--------------------------------------
+5 8 6 average
+--------------------------------------
+6 8 7 average
+--------------------------------------
+7 0 0 terminal0
+--------------------------------------
+8 0 0 terminal1
+--------------------------------------

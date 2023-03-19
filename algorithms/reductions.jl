@@ -221,6 +221,75 @@ function reindex_by_sccs(game::Vector{SGNode},orderedsccs::Vector{Vector{Int}})
 end
 
 """
+    remove_single_arc_nodes(reducedgame::Vector{SGNode})
+
+Reduces and reindexes a SSG so that it is has no one arc nodes
+Return (Vector{SGNode}) the reduced game
+
+# Arguments
+- `reducedgame::Vector{SGNode}`: The SSG
+"""
+function remove_single_arc_nodes(reducedgame::Vector{SGNode})
+    parentmap = get_parent_map(reducedgame)
+    t_one,t_zero = getterminalindexes(reducedgame)
+    reducedgame = getmutablegame(reducedgame)
+    unchanged = false
+    while !unchanged
+        unchanged = true
+        for (i,node) in enumerate(reducedgame)
+            if node.type == maximizer && (node.arc_a==t_zero || node.arc_b==t_zero)
+                if node.arc_a == t_zero
+                    endpoint = node.arc_b
+                else 
+                    endpoint = node.arc_a
+                end
+                for parent in parentmap[i]
+                    if reducedgame[parent].arc_a == i
+                        reducedgame[parent].arc_a = endpoint
+                    else
+                        reducedgame[parent].arc_b = endpoint
+                    end
+                end
+                deleteat!(reducedgame,i)
+                unchanged = false
+                break
+            elseif node.type == minimizer && (node.arc_a==t_one || node.arc_b==t_one)
+                if node.arc_a == t_one
+                    endpoint = node.arc_b
+                else 
+                    endpoint = node.arc_a
+                end
+                for parent in parentmap[i]
+                    if reducedgame[parent].arc_a == i
+                        reducedgame[parent].arc_a = endpoint
+                    else
+                        reducedgame[parent].arc_b = endpoint
+                    end
+                end
+                deleteat!(reducedgame,i)
+                unchanged = false
+                break
+            end
+        end
+        #reindex
+        if !unchanged
+            indexmap = Dict{Int, Int}(0 => 0)
+            for (i,node) in enumerate(reducedgame)
+                indexmap[node.label] = i
+            end
+            for node in reducedgame
+                node.label = indexmap[node.label]
+                node.arc_a = indexmap[node.arc_a]
+                node.arc_b = indexmap[node.arc_b]
+            end
+            parentmap = get_parent_map(reducedgame)
+            t_one,t_zero = getterminalindexes(reducedgame)
+        end
+    end
+    return getstaticgame(reducedgame)
+end
+
+"""
     reduce_game(game::Vector{SGNode}, parentmap::Dict{Int, Vector{Int}})
 
 Reduces a reindexes a SSG so that it is sorted by its SCCs
@@ -232,6 +301,7 @@ Return (Vector{SGNode}, Vector{Vector{Int}}) the reduced game and the scc associ
 """
 function reduce_game(game::Vector{SGNode}, parentmap::Dict{Int, Vector{Int}})
     reducedgame = remove_ones_and_zeros(game, parentmap)
+    reducedgame = remove_single_arc_nodes(reducedgame::Vector{SGNode})
     orderedsccs = sort_into_sccs(reducedgame)
     reducedgame = reindex_by_sccs(reducedgame,orderedsccs)
 

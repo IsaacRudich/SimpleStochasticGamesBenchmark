@@ -67,6 +67,54 @@ function get_most_HK_iterations_min(game::Vector{SGNode}; attempts::Int=100,opti
 end 
 
 """
+    get_most_mod_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+
+A heuristic method tries many random seed strtageies for Mod Hoffman-Karp looking for the longest runtime
+Returns {Int} the largest number of iterations found
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `attempts::Int`: The number of random strategies to try
+- `optimizer::DataType`: the optimizer that JUMP should use
+- `logging_on::Bool`: whether or not to log basic progress
+"""
+function get_most_mod_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    longest_so_far = 0
+
+    for i in 1:attempts
+        avg_node_order = generate_random_average_nodes_order(game)
+        optimal_strategy, iterations = mod_hoffman_karp_switch_max_nodes(game, avg_node_order, optimizer=optimizer, logging_on=logging_on)
+        longest_so_far = max(iterations,longest_so_far)
+    end
+
+    return longest_so_far
+end 
+
+"""
+    get_most_mod_HK_iterations_min(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+
+A heuristic method tries many random seed strtageies for Mod Hoffman-Karp looking for the longest runtime
+Returns {Int} the largest number of iterations found
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `attempts::Int`: The number of random strategies to try
+- `optimizer::DataType`: the optimizer that JUMP should use
+- `logging_on::Bool`: whether or not to log basic progress
+"""
+function get_most_mod_HK_iterations_min(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    longest_so_far = 0
+
+    for i in 1:attempts
+        avg_node_order = generate_random_average_nodes_order(game)
+        optimal_strategy, iterations = mod_hoffman_karp_switch_min_nodes(game, avg_node_order, optimizer=optimizer, logging_on=logging_on)
+        longest_so_far = max(iterations,longest_so_far)
+    end
+
+    return longest_so_far
+end 
+
+"""
     analyze_longest_paths(filename::String)
 
 Does a BFS to find the longest paths to all of the max nodes in a graph, prints the results

@@ -1,12 +1,12 @@
 """
-    get_parent_map(game::Vector{SGNode})
+    get_parent_map(game::Union{Vector{SGNode},Vector{MutableSGNode}})
 
 Get a parent map for a given game
 
 # Arguments
-- `game::Vector{SGNode}`: The SSG
+- `game::Union{Vector{SGNode},Vector{MutableSGNode}}`: The SSG
 """
-function get_parent_map(game::Vector{SGNode})
+function get_parent_map(game::Union{Vector{SGNode},Vector{MutableSGNode}})
     parentmap = Dict{Int, Vector{Int}}()
 
     @inbounds for (id, node) in enumerate(game)
