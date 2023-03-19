@@ -98,9 +98,10 @@ Create a file with the given SSG
 # Arguments
 - `nodes::Vector{SGNode}`: The graph to write to the file
 - `filename::String`: The name of the file (do not include an extension, that is done automatically)
-- `num_iterations::Union{Nothing, Int}`: if it is not nothing, a line will be added to the file recording this number
+- `max_iterations::Union{Nothing, Int}`: if it is not nothing, a line will be added to the file recording this number
+- `min_iterations::Union{Nothing, Int}`: if it is not nothing, a line will be added to the file recording this number
 """
-function write_stopping_game(nodes::Vector{SGNode}, filename::String; num_iterations::Union{Nothing, Int}=nothing)
+function write_stopping_game(nodes::Vector{SGNode}, filename::String; max_iterations::Union{Nothing, Int}=nothing,min_iterations::Union{Nothing, Int}=nothing, sccs::Union{Nothing,Vector{Vector{Int}}} = nothing)
     filepath = string(@__DIR__ , "/../instances/" , filename)
     nmax::Int=0
     nmin::Int=0
@@ -120,14 +121,29 @@ function write_stopping_game(nodes::Vector{SGNode}, filename::String; num_iterat
         write(file,string("# ",filename,"\n"))
         write(file,string("# created: ",Dates.today(),"\n"))
         write(file,string("# using instance generator from Avi Rudich, Isaac Rudich, Rachel Rue","\n\n"))
-        if !isnothing(num_iterations)
-            write(file,string("# worst known Hoffman-Karp seed converges in: $num_iterations","\n\n"))
+        if !isnothing(max_iterations)
+            write(file,string("# worst known Hoffman-Karp seed converges in: $max_iterations"," for max player\n\n"))
+        end
+        if !isnothing(min_iterations)
+            write(file,string("# worst known Hoffman-Karp seed converges in: $min_iterations"," for min player\n\n"))
         end
         write(file,string("NMAX: ",nmax,"\n"))
         write(file,string("NMIN: ",nmin,"\n"))
         write(file,string("NAVG: ",navg,"\n\n"))
-        for (i,node) in enumerate(nodes)
-            write(file,string(i," ",node.arc_a," ",node.arc_b," ",node.type,"\n"))
+        if isnothing(sccs)
+            for (i,node) in enumerate(nodes)
+                write(file,string(i," ",node.arc_a," ",node.arc_b," ",node.type,"\n"))
+            end
+        else
+            counter = 1
+            for scc in sccs
+                for e in scc
+                    node = nodes[counter]
+                    write(file,string(counter," ",node.arc_a," ",node.arc_b," ",node.type,"\n"))
+                    counter += 1
+                end
+                write(file,"--------------------------------------\n")
+            end
         end
     close(file)
 end

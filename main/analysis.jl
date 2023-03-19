@@ -1,5 +1,5 @@
 """
-    get_most_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    get_most_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
 
 A heuristic method tries some intentional, and many random, seed strtageies for Hoffman-Karp looking for the longest runtime
 Returns {Int} the largest number of iterations found
@@ -10,7 +10,7 @@ Returns {Int} the largest number of iterations found
 - `optimizer::DataType`: the optimizer that JUMP should use
 - `logging_on::Bool`: whether or not to log basic progress
 """
-function get_most_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function get_most_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
     max_strat = generate_upwards_max_strategy(game)
     optimal_strategy, iterations = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on)
     longest_so_far = iterations
@@ -33,7 +33,7 @@ function get_most_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimize
 end 
 
 """
-    get_most_HK_iterations_backwards(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    get_most_HK_iterations_min(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
 
 A heuristic method tries some intentional, and many random, seed strtageies for Hoffman-Karp looking for the longest runtime
 Returns {Int} the largest number of iterations found
@@ -44,7 +44,7 @@ Returns {Int} the largest number of iterations found
 - `optimizer::DataType`: the optimizer that JUMP should use
 - `logging_on::Bool`: whether or not to log basic progress
 """
-function get_most_HK_iterations_backwards(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function get_most_HK_iterations_min(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
     min_strat = generate_upwards_min_strategy(game)
     optimal_strategy, iterations = hoffman_karp_switch_min_nodes(game,min_strat, optimizer = optimizer, logging_on = logging_on)
     longest_so_far = iterations

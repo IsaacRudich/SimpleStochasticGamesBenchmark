@@ -122,7 +122,7 @@ Solve an SSG using Hoffman Karp
 - `log_switches::Bool`: whether or not to print switchable nodes, default is false
 - `log_values::Bool`: whether or not to print the optimal values
 """
-function hoffman_karp_switch_min_nodes(game::Vector{SGNode},min_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true, log_switches::Bool=false, log_values::Bool=false)	
+function hoffman_karp_switch_min_nodes(game::Vector{SGNode},min_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true, log_switches::Bool=false, log_values::Bool=false)
 	epsilon = eps()
     #strategy initialization
 	max_strat = Dict{Int, Int}()

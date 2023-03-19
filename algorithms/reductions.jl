@@ -219,3 +219,23 @@ function reindex_by_sccs(game::Vector{SGNode},orderedsccs::Vector{Vector{Int}})
     sort!(m_game, by = x -> x.label)
     return getstaticgame(m_game)
 end
+
+"""
+    reduce_game(game::Vector{SGNode}, parentmap::Dict{Int, Vector{Int}})
+
+Reduces a reindexes a SSG so that it is sorted by its SCCs
+Return (Vector{SGNode}, Vector{Vector{Int}}) the reduced game and the scc associated with it
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `parentmap::Dict{Int, Vector{Int}}`: Map to the parents of the nodes
+"""
+function reduce_game(game::Vector{SGNode}, parentmap::Dict{Int, Vector{Int}})
+    reducedgame = remove_ones_and_zeros(game, parentmap)
+    orderedsccs = sort_into_sccs(reducedgame)
+    reducedgame = reindex_by_sccs(reducedgame,orderedsccs)
+
+    orderedsccs = sort_into_sccs(reducedgame)
+    
+    return reducedgame, orderedsccs
+end

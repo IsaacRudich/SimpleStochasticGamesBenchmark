@@ -1,0 +1,30 @@
+# 4_4_4_r_10.ssg
+# created: 2023-03-19
+# using instance generator from Avi Rudich, Isaac Rudich, Rachel Rue
+
+# worst known Hoffman-Karp seed converges in: 4 for max player
+
+# worst known Hoffman-Karp seed converges in: 4 for min player
+
+NMAX: 4
+NMIN: 4
+NAVG: 4
+
+1 10 8 maximizer
+2 9 1 average
+3 8 9 minimizer
+4 3 6 maximizer
+5 14 4 average
+6 12 5 minimizer
+7 10 11 maximizer
+8 14 7 average
+9 8 6 minimizer
+10 9 4 minimizer
+11 10 2 maximizer
+--------------------------------------
+12 13 14 average
+--------------------------------------
+13 0 0 terminal0
+--------------------------------------
+14 0 0 terminal1
+--------------------------------------

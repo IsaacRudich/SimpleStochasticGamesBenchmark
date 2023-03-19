@@ -1,0 +1,41 @@
+# 8_8_8_r_10.ssg
+# created: 2023-03-19
+# using instance generator from Avi Rudich, Isaac Rudich, Rachel Rue
+
+# worst known Hoffman-Karp seed converges in: 7for max player
+
+# worst known Hoffman-Karp seed converges in: 7for min player
+
+NMAX: 8
+NMIN: 8
+NAVG: 8
+
+1 25 17 average
+2 8 16 minimizer
+3 19 7 average
+4 14 3 maximizer
+5 23 4 minimizer
+6 5 2 maximizer
+7 15 6 maximizer
+8 16 22 minimizer
+9 8 12 average
+10 16 9 maximizer
+11 22 10 maximizer
+12 16 11 maximizer
+13 22 24 minimizer
+14 17 13 average
+15 14 26 average
+16 22 15 minimizer
+17 16 12 minimizer
+18 17 23 average
+19 25 18 average
+20 19 7 maximizer
+21 20 1 maximizer
+22 26 21 average
+23 22 3 minimizer
+24 23 16 minimizer
+--------------------------------------
+25 0 0 terminal0
+--------------------------------------
+26 0 0 terminal1
+--------------------------------------
