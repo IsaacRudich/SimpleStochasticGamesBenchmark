@@ -228,3 +228,10 @@ function test_ones(filename::String = "64_64_32/64_64_32_1.ssg",optimizer::DataT
     optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on,log_values=log_values)
     # mod_optimal_strategy, mod_iterations = mod_hoffman_karp_switch_max_nodes(game,avg_node_order, optimizer = optimizer, logging_on = logging_on, log_values=log_values)
 end
+
+function run_mod_hk(game::String;optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    game = read_stopping_game(game)
+    avg_node_order = generate_random_average_nodes_order(game)
+    optimal_strategy, iterations = mod_hoffman_karp_switch_min_nodes(game, avg_node_order, optimizer=optimizer, logging_on=logging_on, log_analysis=true)
+    println("iterations: $iterations")
+end

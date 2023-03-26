@@ -1,4 +1,5 @@
 include("tarjans_strongly_connected_components.jl")
+include("analyze_average_nodes.jl")
 include("parent_finding.jl")
 include("generate_strategy.jl")
 include("generate_LP.jl")

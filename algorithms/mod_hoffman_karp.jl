@@ -104,8 +104,13 @@ Solve an SSG using a Modified Hoffman Karp that skips iterations by jumping to t
 - `logging_on::Bool`: whether or not to log basic progress
 - `log_switches::Bool`: whether or not to print switchable nodes, default is false
 - `log_values::Bool`: whether or not to print the optimal values
+- `log_analysis::Bool`: whether or not to print an analysis of the solve
 """
-function mod_hoffman_karp_switch_min_nodes(game::Vector{SGNode},average_node_order::Vector{Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true, log_switches::Bool=false,log_values::Bool=false)	
+function mod_hoffman_karp_switch_min_nodes(game::Vector{SGNode},average_node_order::Vector{Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true, log_switches::Bool=false,log_values::Bool=false, log_analysis::Bool=false)	
+	if log_analysis
+		average_node_orders = Vector{Vector{Int}}()
+		push!(average_node_orders, copy(average_node_order))
+	end
 	epsilon = eps()
     #strategy initialization
 	parentmap = get_parent_map(game)
@@ -128,6 +133,9 @@ function mod_hoffman_karp_switch_min_nodes(game::Vector{SGNode},average_node_ord
 			#check if optimal
 
 			sort!(average_node_order, by = x -> value(v[x]), rev = true)
+			if log_analysis
+				push!(average_node_orders, copy(average_node_order))
+			end
 			new_min_strat = generate_min_strategy_from_average_order(game, average_node_order, parentmap)
 
 			for key in keys(min_strat)
@@ -183,5 +191,8 @@ function mod_hoffman_karp_switch_min_nodes(game::Vector{SGNode},average_node_ord
 		println("Hoffman Karp Iterations: $i")
 	end
 
+	if log_analysis
+		count_average_switches(average_node_orders)
+	end
 	return min_strat, i
 end

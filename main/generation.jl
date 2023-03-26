@@ -131,7 +131,7 @@ Generate hard to solve reduced SSGs, and writes them to a files.
 - `optimizer::DataType`: the solver to use for HK
 - `logging_on::Bool`: turns on debug statements
 """
-function generate_worst_reduced_games(nmax::Int=4, nmin::Int=4, navg::Int=4, num_to_write::Int=10, num_to_generate::Int=100, num_strategy_attempts::Int=250, filename::String="4_4_4_r"; optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function generate_worst_reduced_games(nmax::Int=64, nmin::Int=64, navg::Int=64, num_to_write::Int=10, num_to_generate::Int=50, num_strategy_attempts::Int=250, filename::String="64_64_64_r"; optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
     worst_games = Vector{Vector{SGNode}}()
     matching_iterations = Vector{Int}()
     matching_max_iterations = Vector{Int}()
@@ -197,7 +197,7 @@ Generate hard to solve reduced SSGs (based on mod-HK), and writes them to a file
 - `optimizer::DataType`: the solver to use for HK
 - `logging_on::Bool`: turns on debug statements
 """
-function generate_worst_reduced_games_mod(nmax::Int=4, nmin::Int=4, navg::Int=8, num_to_write::Int=10, num_to_generate::Int=100, num_strategy_attempts::Int=250, filename::String="4_4_8_m"; optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function generate_worst_reduced_games_mod(nmax::Int=64, nmin::Int=64, navg::Int=64, num_to_write::Int=10, num_to_generate::Int=50, num_strategy_attempts::Int=250, filename::String="64_64_64_m"; optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
     worst_games = Vector{Vector{SGNode}}()
     matching_iterations = Vector{Int}()
     matching_max_iterations = Vector{Int}()
