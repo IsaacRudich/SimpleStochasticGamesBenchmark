@@ -13,6 +13,9 @@ function solve_using_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothi
     queue = falses(length(game))
     queue[t_one] = true
 
+    decisions = Dict{Int, Int}()
+    is_added = true
+    average_parents = falses(length(game))
     while sum(queue) < length(game) - 1
         #phase one, add all collapsing nodes
         @inline average_parents = add_average_parents!(queue, game, parentmap)
@@ -40,7 +43,7 @@ function solve_using_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothi
         end
 
         #phase two add looping average nodes
-        average_parents = falses(length(game))
+        average_parents .= 0
         is_added = true
         while is_added
             is_added = false
@@ -62,7 +65,7 @@ function solve_using_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothi
         end
 
         #phase three get decisions
-        decisions = Dict{Int, Int}()
+        empty!(decisions)
         @inbounds for (i,node) in enumerate(game)
             if queue[i]
                 if node.type == maximizer
@@ -94,6 +97,9 @@ function solve_using_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothi
         rows = Vector{Int}()
         cols = Vector{Int}()
         vals = Vector{Float64}()
+        sizehint!(rows, length(game))
+        sizehint!(cols, length(game))
+        sizehint!(vals, length(game))
 
         # Initialize a right-hand side vector
         b = zeros(length(game))
@@ -141,12 +147,19 @@ function solve_using_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothi
         # Solve the linear system Ax = b
         x = A \ b
 
-        # Print the result
-        println(x)
+        for i in 1:length(game)
+            if x[i] != 0
+                values[i] = x[i]
+            end
+        end
+    end
+    # Print the result
+    for i in 1:length(game)
+        println(i, " => ", round(values[i],digits = 4))
     end
 end
 
-function get_average_parents!(set::BitVector, game::Vector{SGNode},parentmap::Dict{Int, Vector{Int}})
+function add_average_parents!(set::BitVector, game::Vector{SGNode},parentmap::Dict{Int, Vector{Int}})
     average_parents = falses(length(game))
     @inbounds for (i,e) in enumerate(set)
         if e
