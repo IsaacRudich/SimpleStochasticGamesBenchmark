@@ -1,5 +1,10 @@
 function solve_using_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothing,Dict{Int, Vector{Int}}}=nothing)
     t_one,t_zero = getterminalindexes(game)
+    values = Dict{Int, Float64}()
+    for i in 1:length(game)
+        values[i] = 0.0
+    end
+    values[t_one] = 1
     
     if isnothing(parentmap)
         parentmap = get_parent_map(game)
@@ -38,7 +43,7 @@ function solve_using_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothi
         is_added = false
         average_parents .= false
 
-        for (i,node) in enumerate(game)
+        @inbounds for (i,node) in enumerate(game)
             if !queue[i] && node.type==average && (queue[game[i].arc_a] || queue[game[i].arc_a])
                 for parent in parentmap[i]
                     if queue[parent]
@@ -54,10 +59,87 @@ function solve_using_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothi
     end
 
     #phase three get decisions
-    decision = Dict{Int, Int}()
-    for (i,node) in enumerate(game)
-
+    decisions = Dict{Int, Int}()
+    @inbounds for (i,node) in enumerate(game)
+        if queue[i]
+            if node.type == maximizer
+                if queue[node.arc_a] && queue[node.arc_a]
+                    if values[node.arc_a] >= values[node.arc_b]
+                        decisions[node] = node.arc_a
+                    else
+                        decisions[node] = node.arc_b
+                    end
+                elseif queue[node.arc_a]
+                    decisions[node] = node.arc_a
+                elseif queue[node.arc_b]
+                    decisions[node] = node.arc_b
+                end
+            elseif node.type == minimizer
+                if queue[node.arc_a] && queue[node.arc_a]
+                    if values[node.arc_a] <= values[node.arc_b]
+                        decisions[node] = node.arc_a
+                    else
+                        decisions[node] = node.arc_b
+                    end
+                end
+            end
+        end
     end
+
+    #phase four Guassian Elimination
+    # Initialize arrays to store row, column indices, and values for the sparse matrix
+    rows = Vector{Int}()
+    cols = Vector{Int}()
+    vals = Vector{Float64}()
+
+    # Initialize a right-hand side vector
+    b = zeros(length(game))
+
+    # Loop over the nodes and build the sparse matrix based on their type
+    @inbounds for (i,node) in enumerate(game)
+        if queue[i]
+            if node.type == average
+                push!(rows, i)
+                push!(cols, node.arc_a)
+                push!(vals, 0.5)
+
+                push!(rows, i)
+                push!(cols, node.arc_b)
+                push!(vals, 0.5)
+
+                push!(rows, i)
+                push!(cols, i)
+                push!(vals, -1.0)
+            elseif node.type == maximizer || node.type == minimizer
+                push!(rows, i)
+                push!(cols, decisions[i])
+                push!(vals, 1.0)
+
+                push!(rows, i)
+                push!(cols, i)
+                push!(vals, -1.0)
+            elseif node.type == terminal1
+                push!(rows, i)
+                push!(cols, i)
+                push!(vals, 1.0)
+
+                b[i] = 1
+            end
+        else
+            push!(rows, i)
+            push!(cols, i)
+            push!(vals, 1.0)
+        end
+    end
+
+    # Create the sparse matrix A
+    A = sparse(rows, cols, vals, length(game), length(game))
+
+    # Solve the linear system Ax = b
+    x = A \ b
+
+    # Print the result
+    println(x)
 end
 
 function add_average_parents!(set::BitVector, game::Vector{SGNode},parentmap::Dict{Int, Vector{Int}})
@@ -67,6 +149,7 @@ function add_average_parents!(set::BitVector, game::Vector{SGNode},parentmap::Di
             for parent in parentmap[i]
                 if game[parent].type == average
                     average_parents[parent] = true
+                end
             end
         end
     end

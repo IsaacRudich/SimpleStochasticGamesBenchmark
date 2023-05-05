@@ -235,3 +235,19 @@ function run_mod_hk(game::String;optimizer::DataType = CPLEX.Optimizer, logging_
     optimal_strategy, iterations = mod_hoffman_karp_switch_min_nodes(game, avg_node_order, optimizer=optimizer, logging_on=logging_on, log_analysis=true)
     println("iterations: $iterations")
 end
+
+
+
+
+
+
+
+
+
+
+function run_nearness_to_one(filename::String = "64_64_64_r/64_64_64_r_1.ssg",optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false, log_values = true)
+    game::Vector{SGNode} = read_stopping_game(filename)
+    parentmap = get_parent_map(game)
+
+    solve_using_nearness_to_one(game, parentmap=parentmap)
+end

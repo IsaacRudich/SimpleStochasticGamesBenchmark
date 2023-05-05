@@ -5,6 +5,9 @@ using CPLEX
 using Random
 using Dates
 
+using SparseArrays
+using LinearAlgebra
+
 using Revise
 
 include("sg_objects/sg_objects.jl")
