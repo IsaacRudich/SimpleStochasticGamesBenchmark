@@ -5,6 +5,8 @@ using CPLEX
 using Random
 using Dates
 
+using Revise
+
 include("sg_objects/sg_objects.jl")
 include("io/io.jl")
 include("algorithms/algorithms_main.jl")
