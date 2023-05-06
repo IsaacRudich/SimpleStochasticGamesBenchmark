@@ -83,3 +83,50 @@ function retrive_solution_values(game::Vector{SGNode}, strategy::Dict{Int, Int})
 
     return values
 end
+
+
+"""
+    compare_solution_values(a::Dict{Int, Float64}(), b::Dict{Int, Float64}())
+
+Prints all values that disagree between two soltions to an SSG
+
+# Arguments
+- `a::Dict{Int, Float64}`: the values of a solution to a game
+- `b::Dict{Int, Float64}`: another set of values of a solution to the same game
+"""
+function compare_solution_values(a::Dict{Int, Float64}, b::Dict{Int, Float64})
+    disagreement_found = false
+
+    for i in eachindex(a)
+        if !(eps_equals(a[i],b[i]))
+            println(i,": ",a[i], " ", b[i])
+            disagreement_found = true
+        end
+    end
+    if !disagreement_found
+        println("Solutions are the same.")
+    end
+end
+
+"""
+    compare_solutions(a::Dict{Int, Int}, b::Dict{Int,Int})
+
+Prints all decisions that disagree between two soltions to an SSG
+
+# Arguments
+- `a::Dict{Int, Float64}`: the solution to a game
+- `b::Dict{Int, Float64}`: a solution to the same game
+"""
+function compare_solutions(a::Dict{Int, Int}, b::Dict{Int,Int})
+    disagreement_found = false
+    sorted_keys = sort!(collect(keys(a)))
+    for i in sorted_keys
+        if !(a[i]==b[i])
+            println(i,": ",a[i], " ", b[i])
+            disagreement_found = true
+        end
+    end
+    if !disagreement_found
+        println("Strategies are the same.")
+    end
+end

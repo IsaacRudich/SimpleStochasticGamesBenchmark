@@ -249,16 +249,14 @@ function run_nearness_to_one(filename::String = "64_64_64_r/64_64_64_r_1.ssg",op
     game::Vector{SGNode} = read_stopping_game(filename)
     parentmap = get_parent_map(game)
 
-    values = solve_using_nearness_to_one(game, parentmap=parentmap)
+    decisions, values = solve_using_nearness_to_one(game, parentmap=parentmap)
 
     avg_node_order = generate_random_average_nodes_order(game)
     max_strat = generate_max_strategy_from_average_order(game, avg_node_order, parentmap)
     optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on,log_values=log_values)
     
     optimal_values = retrive_solution_values(game, optimal_strategy)
-    print_solution_values(game, optimal_values)
 
-    for i in eachindex(values)
-        println(values[i], " ", optimal_values[i], " ", values[i]==optimal_values[i])
-    end
+    compare_solution_values(values,optimal_values)
+    compare_solutions(decisions,optimal_strategy)
 end

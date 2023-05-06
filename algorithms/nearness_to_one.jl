@@ -154,7 +154,7 @@ function solve_using_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothi
         end
     end
     # Print the result
-    return values
+    return decisions, values
 end
 
 function add_average_parents!(set::BitVector, game::Vector{SGNode},parentmap::Dict{Int, Vector{Int}})
