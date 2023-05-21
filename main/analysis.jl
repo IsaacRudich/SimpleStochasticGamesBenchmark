@@ -258,5 +258,5 @@ function run_nearness_to_one(filename::String = "64_64_64_r/64_64_64_r_1.ssg",op
     optimal_values = retrive_solution_values(game, optimal_strategy)
 
     compare_solution_values(values,optimal_values)
-    compare_solutions(decisions,optimal_strategy)
+    compare_solutions(decisions,optimal_strategy,a_values = values,b_values = optimal_values)
 end

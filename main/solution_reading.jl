@@ -109,21 +109,26 @@ function compare_solution_values(a::Dict{Int, Float64}, b::Dict{Int, Float64})
 end
 
 """
-    compare_solutions(a::Dict{Int, Int}, b::Dict{Int,Int})
+    compare_solutions(a::Dict{Int, Int}, b::Dict{Int,Int}; a_values::Union{Dict{Int, Float64},Nothing}=nothing,b_values::Union{Dict{Int, Float64},Nothing})
 
 Prints all decisions that disagree between two soltions to an SSG
+If values are included, does not print different but equivalent decisions
 
 # Arguments
-- `a::Dict{Int, Float64}`: the solution to a game
-- `b::Dict{Int, Float64}`: a solution to the same game
+- `a::Dict{Int, Int}`: the solution to a game
+- `b::Dict{Int, Int}`: a solution to the same game
+- `a_values::Union{Dict{Int, Float64},Nothing}`: the values of solution a
+- `b_values::Union{Dict{Int, Float64},Nothing}`: the values of solution b
 """
-function compare_solutions(a::Dict{Int, Int}, b::Dict{Int,Int})
+function compare_solutions(a::Dict{Int, Int}, b::Dict{Int,Int}; a_values::Union{Dict{Int, Float64},Nothing}=nothing,b_values::Union{Dict{Int, Float64},Nothing}=nothing)
     disagreement_found = false
     sorted_keys = sort!(collect(keys(a)))
     for i in sorted_keys
-        if !(a[i]==b[i])
-            println(i,": ",a[i], " ", b[i])
-            disagreement_found = true
+        if a[i]!=b[i]
+            if isnothing(a_values) || a_values[i]!=b_values[i] 
+                println(i,": ",a[i], " ", b[i])
+                disagreement_found = true
+            end
         end
     end
     if !disagreement_found

@@ -1,3 +1,13 @@
+"""
+    solve_using_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothing,Dict{Int, Vector{Int}}}=nothing)
+
+Solve an SSG by solving prioritizing shortest paths to one. 
+Return decisions::Dict{Int, Int}, values::Dict{Int, Float64}
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `parentmap::Union{Nothing,Dict{Int, Vector{Int}}}`: parent map for the SSG
+"""
 function solve_using_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothing,Dict{Int, Vector{Int}}}=nothing)
     t_one,t_zero = getterminalindexes(game)
     values = Dict{Int, Float64}()
@@ -9,6 +19,8 @@ function solve_using_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothi
     if isnothing(parentmap)
         parentmap = get_parent_map(game)
     end
+
+    extra_arcs = find_collapsing_clusters(game,parentmap)
 
     queue = falses(length(game))
     queue[t_one] = true
@@ -79,6 +91,15 @@ function solve_using_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothi
                         decisions[i] = node.arc_a
                     elseif queue[node.arc_b]
                         decisions[i] = node.arc_b
+                    end
+                    if haskey(extra_arcs, i)
+                        current_value = values[decisions[i]]
+                        for extra_arc in extra_arcs[i]
+                            if current_value < values[extra_arc]
+                                decisions[i] = extra_arc
+                                current_value = values[extra_arc]
+                            end
+                        end
                     end
                 elseif node.type == minimizer
                     if queue[node.arc_a] && queue[node.arc_a]
@@ -157,6 +178,17 @@ function solve_using_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothi
     return decisions, values
 end
 
+"""
+    add_average_parents!(set::BitVector, game::Vector{SGNode},parentmap::Dict{Int, Vector{Int}})
+
+Find the parents of an average node and add them to the set
+Return ::BitVector the modified set
+
+# Arguments
+- `set::BitVector`: the set being modified
+- `game::Vector{SGNode}`: The SSG
+- `parentmap::Dict{Int, Vector{Int}}`: parent map for the SSG
+"""
 function add_average_parents!(set::BitVector, game::Vector{SGNode},parentmap::Dict{Int, Vector{Int}})
     average_parents = falses(length(game))
     @inbounds for (i,e) in enumerate(set)
@@ -169,4 +201,114 @@ function add_average_parents!(set::BitVector, game::Vector{SGNode},parentmap::Di
         end
     end
     return average_parents
+end
+
+"""
+    find_collapsing_clusters(game::Vector{SGNode},parentmap::Dict{Int, Vector{Int}})
+
+Find max nodes that have guaranteed paths to average nodes
+Return ::Dict{Int, Vector{Int}} where each node maps to a list of its anchor nodes
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `parentmap::Dict{Int, Vector{Int}}`: parent map for the SSG
+"""
+function find_collapsing_clusters(game::Vector{SGNode},parentmap::Dict{Int, Vector{Int}})
+    extra_arcs = Dict{Int, Vector{Int}}()
+
+    ancestor_map = Dict{Int, BitVector}()
+    for (i, node) in enumerate(game)
+        if node.type == average
+            ancestor_map[i] = find_ancestors(i, game, parentmap)
+        end
+    end
+
+    found_parent = false
+    rerun_subloop = false
+    for (anchor, ancestors) in ancestor_map
+        #iteratively removes things from ancestors
+        rerun_subloop = true
+        while rerun_subloop
+            rerun_subloop = false
+            for (i, e) in enumerate(ancestors)
+                if e && i != anchor
+                    current_node =  game[i]
+                    if current_node.type == average || current_node.type == minimizer
+                        if !ancestors[current_node.arc_a] || !ancestors[current_node.arc_b]
+                            ancestors[i] = false
+                            rerun_subloop = true
+                        end
+                    elseif current_node.type == maximizer && !ancestors[current_node.arc_a] && !ancestors[current_node.arc_b]
+                        ancestors[i] = false
+                        rerun_subloop = true
+                    end
+                    if ancestors[i] == true
+                        found_parent = false
+                        for parent_id in parentmap[i]
+                            if ancestors[parent_id]
+                                found_parent = true
+                                break
+                            end
+                        end
+                        if !found_parent
+                            ancestors[i] = false
+                            rerun_subloop = true
+                        end
+                    end
+                end
+            end
+        end
+        #check for anchor connectedness
+        found_parent = false
+        for parent_id in parentmap[anchor]
+            if ancestors[parent_id]
+                found_parent = true
+                break
+            end
+        end
+        if found_parent
+            #add third arcs
+            for (i, e) in enumerate(ancestors)
+                if e && game[i].type == maximizer
+                    if !haskey(extra_arcs, i)
+                        extra_arcs[i] = [anchor]
+                    else
+                        push!(extra_arcs[i],anchor)
+                    end
+                end
+            end
+        end
+    end
+
+    return extra_arcs
+end
+
+"""
+    find_ancestors(node_id::Int, game::Vector{SGNode},parentmap::Dict{Int, Vector{Int}})
+
+Get all nodes that have a path to node_id
+Return ::BitVector of node ids in the set
+
+# Arguments
+- `node_id::Int`:the id of the node to find ancestors of
+- `game::Vector{SGNode}`: The SSG
+- `parentmap::Dict{Int, Vector{Int}}`: parent map for the SSG
+"""
+function find_ancestors(node_id::Int, game::Vector{SGNode},parentmap::Dict{Int, Vector{Int}})
+    ancestors = falses(length(game))
+    ancestors[node_id] = true
+
+    queue = Vector{Int}()
+    push!(queue, node_id)
+
+    while !isempty(queue)
+        q_id = popfirst!(queue)
+        for parent_id in parentmap[q_id]
+            if !ancestors[parent_id]
+                ancestors[parent_id] = true
+                push!(queue, parent_id)
+            end
+        end
+    end
+    return ancestors
 end
