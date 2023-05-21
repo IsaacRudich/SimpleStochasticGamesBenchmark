@@ -113,25 +113,29 @@ end
 
 Prints all decisions that disagree between two soltions to an SSG
 If values are included, does not print different but equivalent decisions
+Return ::Int a count
 
 # Arguments
 - `a::Dict{Int, Int}`: the solution to a game
 - `b::Dict{Int, Int}`: a solution to the same game
 - `a_values::Union{Dict{Int, Float64},Nothing}`: the values of solution a
 - `b_values::Union{Dict{Int, Float64},Nothing}`: the values of solution b
+- `print_disagreements::Bool`: if true prints each disagreement
 """
-function compare_solutions(a::Dict{Int, Int}, b::Dict{Int,Int}; a_values::Union{Dict{Int, Float64},Nothing}=nothing,b_values::Union{Dict{Int, Float64},Nothing}=nothing)
+function compare_solutions(a::Dict{Int, Int}, b::Dict{Int,Int}; a_values::Union{Dict{Int, Float64},Nothing}=nothing,b_values::Union{Dict{Int, Float64},Nothing}=nothing, print_disagreements::Bool=false)
+    counter = 0
     disagreement_found = false
     sorted_keys = sort!(collect(keys(a)))
     for i in sorted_keys
         if a[i]!=b[i]
             if isnothing(a_values) || a_values[i]!=b_values[i] 
-                println(i,": ",a[i], " ", b[i])
+                if print_disagreements
+                    println(i,": ",a[i], " ", b[i])
+                end
+                counter += 1
                 disagreement_found = true
             end
         end
     end
-    if !disagreement_found
-        println("Strategies are the same.")
-    end
+    return counter
 end
