@@ -1,6 +1,10 @@
-# 1024_1024_1024_r_working.ssg
+# 1024_1024_1024_r_8.ssg
 # created: 2023-05-21
 # using instance generator from Avi Rudich, Isaac Rudich, Rachel Rue
+
+# worst known Hoffman-Karp seed converges in: 13 for max player
+
+# worst known Hoffman-Karp seed converges in: 13 for min player
 
 NMAX: 1024
 NMIN: 1024
