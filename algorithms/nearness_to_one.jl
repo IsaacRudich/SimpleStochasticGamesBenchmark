@@ -174,7 +174,150 @@ function solve_using_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothi
             end
         end
     end
+
+    @inbounds for (i, node) in enumerate(game)
+        if node.type == maximizer
+            if decisions[i] == node.arc_a || decisions[i] == node.arc_b
+                continue
+            elseif values[decisions[i]] == node.arc_a
+                decisions[i] = node.arc_a
+            elseif values[decisions[i]] == node.arc_b
+                decisions[i] = node.arc_b
+            else
+                if values[node.arc_a] <= values[node.arc_b]
+                    decisions[i] = node.arc_b
+                else
+                    decisions[i] = node.arc_a
+                end
+            end
+        end
+    end
     # Print the result
+    return decisions, values
+end
+
+"""
+    iterative_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothing,Dict{Int, Vector{Int}}}=nothing)
+
+Fails to solve an SSG by iteratively solving prioritizing shortest paths to one. 
+Return decisions::Dict{Int, Int}, values::Dict{Int, Float64}
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `parentmap::Union{Nothing,Dict{Int, Vector{Int}}}`: parent map for the SSG
+"""
+function iterative_nearness_to_one(game::Vector{SGNode};parentmap::Union{Nothing,Dict{Int, Vector{Int}}}=nothing)
+    rows = Vector{Int}()
+    cols = Vector{Int}()
+    vals = Vector{Float64}()
+    sizehint!(rows, length(game))
+    sizehint!(cols, length(game))
+    sizehint!(vals, length(game))
+    b = zeros(length(game))
+
+    if isnothing(parentmap)
+        parentmap = get_parent_map(game)
+    end
+
+    decisions, values = solve_using_nearness_to_one(game,parentmap=parentmap)
+
+    value_changed = true
+    counter = 1
+    while value_changed
+        sorted_nodes = collect(keys(values))
+        sort!(sorted_nodes, by = x -> values[x])
+
+        value_changed = false
+        while !isempty(sorted_nodes)
+            current_node = pop!(sorted_nodes)
+            @inbounds for parent_id in parentmap[current_node]
+                parent = game[parent_id]
+                if parent.type == maximizer && values[parent_id] != max(values[parent.arc_a], values[parent.arc_b])
+                    if decisions[parent_id] == parent.arc_a
+                        decisions[parent_id] = parent.arc_b
+                        values[parent_id] = values[parent.arc_b]
+                        value_changed = true
+                    else
+                        decisions[parent_id] = parent.arc_a
+                        values[parent_id] = values[parent.arc_a]
+                        value_changed = true
+                    end
+                elseif parent.type == minimizer && values[parent_id] != min(values[parent.arc_a], values[parent.arc_b])
+                    if decisions[parent_id] == parent.arc_a
+                        decisions[parent_id] = parent.arc_b
+                        values[parent_id] = values[parent.arc_b]
+                        value_changed = true
+                    else
+                        decisions[parent_id] == parent.arc_a
+                        values[parent_id] = values[parent.arc_a]
+                        value_changed = true
+                    end
+                end
+            end
+        end
+
+        # Initialize arrays to store row, column indices, and values for the sparse matrix
+        empty!(rows)
+        empty!(cols)
+        empty!(vals)
+        # Initialize a right-hand side vector
+        b .= 0
+        # Loop over the nodes and build the sparse matrix based on their type
+        @inbounds for (i,node) in enumerate(game)
+            if node.type == average
+                push!(rows, i)
+                push!(cols, node.arc_a)
+                push!(vals, 0.5)
+
+                push!(rows, i)
+                push!(cols, node.arc_b)
+                push!(vals, 0.5)
+
+                push!(rows, i)
+                push!(cols, i)
+                push!(vals, -1.0)
+            elseif node.type == maximizer || node.type == minimizer
+                push!(rows, i)
+                push!(cols, decisions[i])
+                push!(vals, 1.0)
+
+                push!(rows, i)
+                push!(cols, i)
+                push!(vals, -1.0)
+            elseif node.type == terminal1
+                push!(rows, i)
+                push!(cols, i)
+                push!(vals, 1.0)
+
+                b[i] = 1
+            elseif node.type == terminal0
+                push!(rows, i)
+                push!(cols, i)
+                push!(vals, 1.0)
+            end
+        end
+
+        # Create the sparse matrix A
+        A = sparse(rows, cols, vals, length(game), length(game))
+
+        # Solve the linear system Ax = b
+        x = A \ b
+
+        @inbounds for i in 1:length(game)
+            if x[i] != 0
+                values[i] = x[i]
+            end
+        end
+
+        counter += 1
+
+        if counter >= length(game)
+            println("Did not converge!")
+            break
+        end
+    end#end while 
+
+    println("Iterative Nearness to One Iterations: ", counter)
     return decisions, values
 end
 
@@ -225,7 +368,7 @@ function find_collapsing_clusters(game::Vector{SGNode},parentmap::Dict{Int, Vect
 
     found_parent = false
     rerun_subloop = false
-    for (anchor, ancestors) in ancestor_map
+    @inbounds for (anchor, ancestors) in ancestor_map
         #iteratively removes things from ancestors
         rerun_subloop = true
         while rerun_subloop

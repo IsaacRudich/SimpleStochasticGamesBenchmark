@@ -260,24 +260,9 @@ function run_nearness_to_one(filename::String = "64_64_64_r/64_64_64_r_1.ssg",op
     #compare_solution_values(values,optimal_values)
     println("Disagreements: ",compare_solutions(decisions,optimal_strategy,a_values = values,b_values = optimal_values))
 
-    input_decisions = Dict{Int,Int}()
-    for (i, node) in enumerate(game)
-        if node.type == maximizer
-            if decisions[i] == node.arc_a || decisions[i] == node.arc_b
-                input_decisions[i] = decisions[i]
-            elseif values[decisions[i]] == node.arc_a
-                input_decisions[i] = node.arc_a
-            elseif values[decisions[i]] == node.arc_b
-                input_decisions[i] = node.arc_b
-            else
-                if values[node.arc_a] <= values[node.arc_b]
-                    input_decisions[i] = node.arc_b
-                else
-                    input_decisions[i] = node.arc_a
-                end
-            end
-        end
-    end
-    @time optimal_strategy, seeded_iterations  = hoffman_karp_switch_max_nodes(game,input_decisions, optimizer = optimizer, logging_on = logging_on,log_values=log_values)
+    @time optimal_strategy, seeded_iterations  = hoffman_karp_switch_max_nodes(game,decisions, optimizer = optimizer, logging_on = logging_on,log_values=log_values)
     println("Seeded: $seeded_iterations, Random: $iterations")
+
+    decisions, values = iterative_nearness_to_one(game,parentmap=parentmap)
+    println("Iterative NTO Disagreements: ",compare_solutions(decisions,optimal_strategy,a_values = values,b_values = optimal_values))
 end
