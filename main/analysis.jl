@@ -266,3 +266,16 @@ function run_nearness_to_one(filename::String = "64_64_64_r/64_64_64_r_1.ssg",op
     decisions, values = iterative_nearness_to_one(game,parentmap=parentmap)
     println("Iterative NTO Disagreements: ",compare_solutions(decisions,optimal_strategy,a_values = values,b_values = optimal_values))
 end
+
+
+function run_geo_hk(filename::String = "64_64_64_r/64_64_64_r_1.ssg",optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    game::Vector{SGNode} = read_stopping_game(filename)
+    parentmap = get_parent_map(game)
+
+    avg_node_order = generate_random_average_nodes_order(game)
+    max_strat = generate_max_strategy_from_average_order(game, avg_node_order, parentmap)
+
+    optimal_strategy, seeded_iterations  = geometric_hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on)
+
+    println("End")
+end
