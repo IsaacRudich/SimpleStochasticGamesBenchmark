@@ -263,8 +263,8 @@ function run_nearness_to_one(filename::String = "64_64_64_r/64_64_64_r_1.ssg",op
     @time optimal_strategy, seeded_iterations  = hoffman_karp_switch_max_nodes(game,decisions, optimizer = optimizer, logging_on = logging_on,log_values=log_values)
     println("Seeded: $seeded_iterations, Random: $iterations")
 
-    decisions, values = iterative_nearness_to_one(game,parentmap=parentmap)
-    println("Iterative NTO Disagreements: ",compare_solutions(decisions,optimal_strategy,a_values = values,b_values = optimal_values))
+    # decisions, values = iterative_nearness_to_one(game,parentmap=parentmap)
+    # println("Iterative NTO Disagreements: ",compare_solutions(decisions,optimal_strategy,a_values = values,b_values = optimal_values))
 end
 
 

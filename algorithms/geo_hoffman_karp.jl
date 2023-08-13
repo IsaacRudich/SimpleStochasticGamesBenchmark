@@ -76,13 +76,100 @@ function geometric_hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat:
 	end
 
     
-    # for switched_nodes in switches_history
-    #     sorted_keys = sort!(collect(keys(switched_nodes)))
-    #     for key in sorted_keys
-    #         print(key, " => ", switched_nodes[key], " , ")
-    #     end
-    #     println()
-    # end
+
+	return merge(max_strat, min_strat), i, switches_history, optimal_values
+end
+
+"""
+    avi_analyze_switches_history(game::Vector{SGNode}, switches_history::Vector{Dict{Int, Int}},optimal_strat::Dict{Int, Int},optimal_values::Dict{Int, Float64})
+
+Analyze accumulated data from geo-hk
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `switches_history::Vector{Dict{Int, Int}}`: the collected data
+- `optimal_strat::Dict{Int, Int}`: the optimal decisions
+- `optimal_values::Dict{Int, Float64}`: the optimal solution
+"""
+function avi_analyze_switches_history(game::Vector{SGNode}, switches_history::Vector{Dict{Int, Int}},optimal_strat::Dict{Int, Int},optimal_values::Dict{Int, Float64})
+    opt_vec = Vector{Tuple{Int, Int}}()
+
+    for (key,val) in optimal_strat
+        push!(opt_vec, (key,val))
+    end
+    
+    for (i,node) in enumerate(game)
+        for choice in [node.arc_a, node.arc_b]
+            # find all members of switches_history that contain node.child == choice
+            kept_switch_iters = Vector{Vector{Tuple{Int, Int}}}()
+            for switch_iter in switches_history
+                if i in keys(switch_iter) && switch_iter[i] == choice
+                    # put switch_iter in set to take intersection on
+                    switch_vec = Vector{Tuple{Int, Int}}()
+                    for (key,val) in switch_iter
+                        push!(switch_vec, (key,val))
+                    end
+                    push!(kept_switch_iters,switch_vec)
+                end
+            end
+
+            if isempty(kept_switch_iters)
+                continue
+            end
+
+            # Take the intersection of everything in intersections
+            intersection = Vector{Tuple{Int,Int}}()
+            for (i,kept_switch_iter) in enumerate(kept_switch_iters)
+                if i == 1
+                    intersection = copy(kept_switch_iter)
+                else
+                    intersect!(intersection,kept_switch_iter)
+                end
+            end
+
+            #Check that one thing left in intersections is in the optimal solution
+
+            check = intersect(opt_vec, intersection)
+    
+            validity_verified = false
+            verification_count = 0
+
+            for e in intersection
+                if eps_equals(optimal_values[e[2]], optimal_values[optimal_strat[e[1]]])
+                    validity_verified = true
+                    verification_count += 1
+                end
+            end
+            println(length(intersection),"=>", verification_count)
+    
+    
+            if length(check)==0
+                if !validity_verified
+                    for e in intersection
+                        println("------------------------------")
+                        println("Node: ",e[1], "  Decision: ", e[2], "  Solution: ", optimal_strat[e[1]])
+                        println(game[e[1]])
+                        println(optimal_values[e[2]], " == ", optimal_values[optimal_strat[e[1]]], " is ", eps_equals(optimal_values[e[2]],optimal_values[optimal_strat[e[1]]]))
+                    end
+                    throw("CRASH BOOM")
+                end
+            end
+        end#our arc loop
+    end#game loop
+end
+
+"""
+    analyze_switches_history(game::Vector{SGNode}, switches_history::Vector{Dict{Int, Int}},optimal_strat::Dict{Int, Int},optimal_values::Dict{Int, Float64})
+
+Analyze accumulated data from geo-hk
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `switches_history::Vector{Dict{Int, Int}}`: the collected data
+- `optimal_strat::Dict{Int, Int}`: the optimal decisions
+- `optimal_values::Dict{Int, Float64}`: the optimal solution
+"""
+function analyze_switches_history(game::Vector{SGNode}, switches_history::Vector{Dict{Int, Int}},optimal_strat::Dict{Int, Int},optimal_values::Dict{Int, Float64})
     println("Intersections:")
     intersections = Vector{Vector{Tuple{Int, Int}}}()
     for i in 1:lastindex(switches_history)-1
@@ -102,16 +189,12 @@ function geometric_hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat:
 
             intersection = intersect(a_vec, b_vec)
 
-            # for e in intersection
-            #     print("\t", e[1], " => ", e[2], " , ")
-            # end
             if !isempty(intersection)
                 push!(intersections, intersection)
             end
         end
     end
 
-    optimal_strat = merge(max_strat, min_strat)
     opt_vec = Vector{Tuple{Int, Int}}()
 
     for (key,val) in optimal_strat
@@ -120,17 +203,50 @@ function geometric_hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat:
 
     for intersection in intersections
         check = intersect(opt_vec, intersection)
-        println(length(check))
+
+        validity_verified = false
+        verification_count = 0
+
+        for e in intersection
+            if optimal_values[e[2]] == optimal_values[optimal_strat[e[1]]]
+                validity_verified = true
+                verification_count += 1
+            end
+        end
+        println(length(intersection),"=>", verification_count)
+
 
         if length(check)==0
-            for e in intersection
-                println("------------------------------")
-                println("Node: ",e[1], "  Decision: ", e[2], "  Solution: ", optimal_strat[e[1]])
-                println(game[e[1]])
-                println(optimal_values[e[1]], " == ", optimal_values[optimal_strat[e[1]]], " is ", optimal_values[e[1]] == optimal_values[optimal_strat[e[1]]])
+            if !validity_verified
+                for e in intersection
+                    println("------------------------------")
+                    println("Node: ",e[1], "  Decision: ", e[2], "  Solution: ", optimal_strat[e[1]])
+                    println(game[e[1]])
+                    println(optimal_values[e[2]], " == ", optimal_values[optimal_strat[e[1]]], " is ", optimal_values[e[2]] == optimal_values[optimal_strat[e[1]]])
+                end
+                throw("CRASH BOOM")
             end
         end
     end
+end
 
-	return merge(max_strat, min_strat), i
+function test_geo_hypothesis(filename::String,data_size::Int;optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    game::Vector{SGNode} = read_stopping_game(filename)
+
+    switches_history = Vector{Dict{Int, Int}}()
+    optimal_values = Dict{Int, Float64}()
+    optimal_strategy = Dict{Int, Int}()
+    while length(switches_history) <= data_size
+        max_strat = generate_random_max_strategy(game)
+        generated_optimal_strategy, iterations, new_switches_history, generated_optimal_values  = geometric_hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on)
+        if isempty(optimal_values)
+            optimal_values = generated_optimal_values
+            optimal_strategy = generated_optimal_strategy
+        end
+        append!(switches_history, new_switches_history)
+        println("Current Data Size: ", length(switches_history))
+    end
+
+    analyze_switches_history(game, switches_history,optimal_strategy,optimal_values)
+    #avi_analyze_switches_history(game, switches_history,optimal_strategy,optimal_values)
 end
