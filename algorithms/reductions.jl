@@ -5,10 +5,10 @@ A method thhat find all of the nodes in a game that collapse to a value of 1
 
 # Arguments
 - `find_ones::Bool`: if true, finds the ones, else finds the zeros
-- `game::Vector{SGNode}`: The SSG
+- `game::Union{Vector{SGNode},Vector{MutableSGNode}}`: The SSG
 - `parentmap::Dict{Int, Vector{Int}}`: Map to the parents of the nodes
 """
-function find_ones_or_zeros(find_ones::Bool, game::Vector{SGNode}, parentmap::Dict{Int, Vector{Int}})
+function find_ones_or_zeros(find_ones::Bool, game::Union{Vector{SGNode},Vector{MutableSGNode}}, parentmap::Dict{Int, Vector{Int}})
     collapsing_cluster = trues(length(game))
     queue = Vector{Int}()
 
@@ -70,15 +70,19 @@ end
 A method that removes all the zeros and ones from a game and returns a game without those nodes
 
 # Arguments
-- `game::Vector{SGNode}`: The SSG
+- `game::Union{Vector{SGNode},Vector{MutableSGNode}}`: The SSG
 - `parentmap::Dict{Int, Vector{Int}}`: Map to the parents of the nodes
 """
-function remove_ones_and_zeros(game::Vector{SGNode}, parentmap::Dict{Int, Vector{Int}})
+function remove_ones_and_zeros(game::Union{Vector{SGNode},Vector{MutableSGNode}}, parentmap::Dict{Int, Vector{Int}})
     ones_vector = find_ones_or_zeros(true, game, parentmap)
     zeros_vector = find_ones_or_zeros(false, game, parentmap)
 
     #shift the arcs to the terminals
-    m_game = getmutablegame(game)
+    if game isa Vector{SGNode}
+        m_game = getmutablegame(game)
+    else
+        m_game = game
+    end
     t_one,t_zero = getterminalindexes(game)
     for node in m_game
         if node.arc_a>0 && ones_vector[node.arc_a]
@@ -296,10 +300,10 @@ Reduces a reindexes a SSG so that it is sorted by its SCCs
 Return (Vector{SGNode}, Vector{Vector{Int}}) the reduced game and the scc associated with it
 
 # Arguments
-- `game::Vector{SGNode}`: The SSG
+- `game::Union{Vector{SGNode},Vector{MutableSGNode}}`: The SSG
 - `parentmap::Dict{Int, Vector{Int}}`: Map to the parents of the nodes
 """
-function reduce_game(game::Vector{SGNode}, parentmap::Dict{Int, Vector{Int}})
+function reduce_game(game::Union{Vector{SGNode},Vector{MutableSGNode}}, parentmap::Dict{Int, Vector{Int}})
     reducedgame = remove_ones_and_zeros(game, parentmap)
     reducedgame = remove_single_arc_nodes(reducedgame::Vector{SGNode})
     orderedsccs = sort_into_sccs(reducedgame)

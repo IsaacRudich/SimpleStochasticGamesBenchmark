@@ -16,6 +16,8 @@ function get_parent_map(game::Union{Vector{SGNode},Vector{MutableSGNode}})
     @inbounds for (id, node) in enumerate(game)
         if node.arc_a != 0
             push!(parentmap[node.arc_a], id)
+        end
+        if node.arc_b != 0
             push!(parentmap[node.arc_b], id)
         end
     end
