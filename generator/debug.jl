@@ -1,3 +1,4 @@
+
 function find_bugs(game, parentmap, inzeronodes)
     #debug check
     for node in game 

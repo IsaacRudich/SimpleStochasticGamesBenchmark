@@ -1,7 +1,7 @@
 """
-    remove_ones_and_zeros(game::Vector{SGNode}, parentmap::Dict{Int, Vector{Int}})
+    remove_nodes(game::Vector{MutableSGNode}, removables::Vector{Int})
 
-A method that removes all the indicated nodes from a game and returns a game without those nodes
+A method that removes all the indicated nodes from a game and returns a game without those nodes, points those arcs at 0
 
 # Arguments
 - `game::Vector{SGNode}`: The SSG
