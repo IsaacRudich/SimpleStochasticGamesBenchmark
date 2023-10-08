@@ -110,14 +110,7 @@ function generate_fully_reduced_stopping_game(nmax::Int, nmin::Int, navg::Int; l
     #memory allocation for max/min node second candidate list
     candidatelist =  trues(length(game)-2)
     processqueue = Vector{Int}()
-    newprocessqueue = Vector{Int}()
     sizehint!(processqueue, length(game)-2)
-    sizehint!(newprocessqueue, length(game)-2)
-    averagecounter = Dict{Int, Int}()
-    for node in game
-        if node.type == average            averagecounter[node.label] = 0
-        end
-    end
     finalcandidates = Vector{Int}()
 
     #get an order for assigning arcs to the remaining nodes
@@ -125,7 +118,7 @@ function generate_fully_reduced_stopping_game(nmax::Int, nmin::Int, navg::Int; l
 
     for nodeindex in randomorder
         #get the arcs that can be potential children of the current node
-        get_arc_availability!(game, parentmap,nodeindex,candidatelist,processqueue,newprocessqueue, averagecounter)
+        get_arc_availability!(game, parentmap,nodeindex,candidatelist,processqueue)
         candidates = findall(x -> x, candidatelist)
         empty!(finalcandidates)
 
@@ -140,11 +133,25 @@ function generate_fully_reduced_stopping_game(nmax::Int, nmin::Int, navg::Int; l
 
         #if there is a candidate assign the arc
         if !isempty(finalcandidates)
-            assignsecondmaxminarc!(game,  parentmap, inzeronodes, rand(finalcandidates))
+            assignsecondmaxminarc!(game,  parentmap, inzeronodes, nodeindex,rand(finalcandidates))
         end
     end
 
-    return game
+    #checks for correctness
+    counter = -2
+    for node in game
+        if node.arc_b == 0
+            counter += 1
+        end
+    end
+    println("Unassigned Arcs: ", counter)
+    println("In Zero Nodes: ",length(inzeronodes))
+    # check_for_bad_subgraphs(game)
+
+    game, orderedsccs = reduce_game(game, parentmap)
+    println("Reduced Game")
+    check_for_bad_subgraphs(game)
+    return game, orderedsccs
 end
 
 ############################
@@ -178,7 +185,7 @@ function assignsecondaveragearc!(game::Vector{MutableSGNode},  parentmap::Dict{I
 end
 
 """
-    assignsecondmaxminarc!(game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, inzeronodes::Vector{Int}, candidatelist::BitVector, assignment::Int)
+    assignsecondmaxminarc!(game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, inzeronodes::Vector{Int}, nodeindex::Int, assignment::Int)  
 
 Assigns a second arc to a max or min node
 Several parameters are only there so that they are pre-allocated for performance.
@@ -188,11 +195,12 @@ All paramaters except 'assignment' may be modified
 - `game::Vector{MutableSGNode}`: The partially generated Stopping Game
 - `parentmap::Dict{Int, Vector{Int}},`: A map from nodes to a list of their parents
 - `inzeronodes::Vector{Int}`: nodes with in-degree zero
-- `assignment::Int`: The node getting a second arc
+- `nodeindex::Int`: The node getting a second arc
+- `assignment::Int`: The assignment of the second arc
 """
-function assignsecondmaxminarc!(game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, inzeronodes::Vector{Int}, assignment::Int)
-    game[assignment].arc_b = assignment
-    push!(parentmap[assignment], assignment)
+function assignsecondmaxminarc!(game::Vector{MutableSGNode},  parentmap::Dict{Int, Vector{Int}}, inzeronodes::Vector{Int}, nodeindex::Int, assignment::Int)
+    game[nodeindex].arc_b = assignment
+    push!(parentmap[assignment], nodeindex)
     removefromsortedlist!(assignment, inzeronodes)
 end
 
@@ -240,7 +248,7 @@ function getothernode(a::Int, b::Int, candidatelist::Vector{Int})
 end
 
 """
-    get_arc_availability!(game::Vector{MutableSGNode}, parentmap::Dict{Int, Vector{Int}},nodeindex::Int,candidatelist::BitVector,processqueue::Vector{Int},newprocessqueue::Vector{Int}, averagecounter::Dict{Int,Int})
+    get_arc_availability!(game::Vector{MutableSGNode}, parentmap::Dict{Int, Vector{Int}},nodeindex::Int,candidatelist::BitVector,processqueue::Vector{Int})
 
 Modify candidatelist to be a list of all arcs that the given node can add an arc to without creating a bad subgraph
 
@@ -250,41 +258,53 @@ Modify candidatelist to be a list of all arcs that the given node can add an arc
 - `nodeindex::Int`: the index of the node being considered
 - `candidatelist::BitVector`: a pre-allocated bitvector to be modified that contains all potential out arcs for the given node
 - `processqueue::Vector{Int}`: an empty but pre-allocated list of nodes
-- `newprocessqueue::Vector{Int}`: an empty but pre-allocated list of nodes
-- `averagecounter::Dict{Int,Int}`: A dictionary with a pre-allocated key for each average node index
 """
-function get_arc_availability!(game::Vector{MutableSGNode}, parentmap::Dict{Int, Vector{Int}},nodeindex::Int,candidatelist::BitVector,processqueue::Vector{Int},newprocessqueue::Vector{Int}, averagecounter::Dict{Int,Int})
-    #initialize pre-allocated variables
+function get_arc_availability!(game::Vector{MutableSGNode}, parentmap::Dict{Int, Vector{Int}},current_node_index::Int,candidatelist::BitVector,processqueue::Vector{Int})
     candidatelist .= true
-    candidatelist[nodeindex] = false
+    candidatelist[current_node_index] = false
     empty!(processqueue)
-    empty!(newprocessqueue)
-    push!(processqueue,nodeindex)
-    for key in keys(averagecounter)
-        averagecounter[key] = 0
+    push!(processqueue, current_node_index)
+    #find ancestor tree
+    while !isempty(processqueue)
+        node_index = popfirst!(processqueue)
+        for parent in parentmap[node_index]
+            if candidatelist[parent]
+                candidatelist[parent] = false
+                push!(processqueue, parent)
+            end
+        end
     end
 
+    #find initial nodes
+    @inbounds for (node_index, is_candidate) in enumerate(candidatelist)
+        current_node = game[node_index]
+        if !is_candidate && current_node.type == average
+            if (current_node.arc_a <= length(candidatelist) && candidatelist[current_node.arc_a]) || (current_node.arc_b <= length(candidatelist) && candidatelist[current_node.arc_b])
+                push!(processqueue, node_index)
+                candidatelist[node_index] = true
+            elseif current_node.arc_a > length(candidatelist) || current_node.arc_b > length(candidatelist)
+                push!(processqueue, node_index)
+                candidatelist[node_index] = true
+            end
+        end
+    end
+
+    #trim down to bad ancestors
     while !isempty(processqueue)
-        for index in processqueue
-            for parentindex in parentmap[index]
-                if candidatelist[parentindex]
-                    currentnode = game[parentindex]
-                    if currentnode.type == average
-                        if averagecounter[parentindex] == 0
-                            averagecounter[parentindex] = 1
-                        elseif averagecounter[parentindex] == 1
-                            averagecounter[parentindex] = 2
-                            candidatelist[parentindex] = false
-                            push!(newprocessqueue)
-                        end
-                    else
-                        candidatelist[parentindex] = false
-                        push!(newprocessqueue)
+        node_index = popfirst!(processqueue)
+        for parent_index in parentmap[node_index]
+            if !candidatelist[parent_index]
+                parent_node = game[parent_index]
+                if parent_node.type == average
+                    push!(processqueue, parent_index)
+                    candidatelist[parent_index] = true
+                elseif parent_node.arc_b <= 0 || (candidatelist[parent_node.arc_a] && candidatelist[parent_node.arc_b])
+                    if parent_index != current_node_index
+                        push!(processqueue, parent_index)
+                        candidatelist[parent_index] = true
                     end
                 end
             end
         end
-        processqueue = copy(newprocessqueue)
-        empty!(newprocessqueue)
     end
 end
