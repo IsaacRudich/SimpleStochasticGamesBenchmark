@@ -1,5 +1,5 @@
 """
-    generate_fully_reduced_stopping_game_lazy(nmax::Int, nmin::Int, navg::Int)
+    generate_fully_reduced_stopping_game(nmax::Int, nmin::Int, navg::Int; logging_on::Bool=false)
 
 Generate a stopping game without trivially solvable nodes, including 0s and 1s. This will most likely have fewer nodes than the input parameters
 Returns::Vector{MutableSGNode}
@@ -140,17 +140,20 @@ function generate_fully_reduced_stopping_game(nmax::Int, nmin::Int, navg::Int; l
     #checks for correctness
     counter = -2
     for node in game
-        if node.arc_b == 0
+        if node.arc_b <= 0
             counter += 1
         end
     end
-    println("Unassigned Arcs: ", counter)
-    println("In Zero Nodes: ",length(inzeronodes))
+    if logging_on
+        println("Unassigned Arcs: ", counter)
+        println("In Zero Nodes: ",length(inzeronodes))
+    end
     # check_for_bad_subgraphs(game)
-
     game, orderedsccs = reduce_game(game, parentmap)
-    println("Reduced Game")
-    check_for_bad_subgraphs(game)
+    if logging_on
+        println("Reduced Game")
+    end
+    # check_for_bad_subgraphs(game)
     return game, orderedsccs
 end
 

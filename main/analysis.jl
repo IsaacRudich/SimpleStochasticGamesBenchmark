@@ -12,25 +12,54 @@ Returns {Int} the largest number of iterations found
 """
 function get_most_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
     max_strat = generate_upwards_max_strategy(game)
-    optimal_strategy, iterations = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on)
+    optimal_strategy, iterations = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = false)
     longest_so_far = iterations
 
     max_strat = generate_downwards_max_strategy(game)
-    optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on)
+    optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on =false)
     longest_so_far = max(iterations,longest_so_far)
 
     max_strat = generate_inverse_max_strategy(game, optimal_strategy)
-    optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on)
+    optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = false)
     longest_so_far = max(iterations,longest_so_far)
 
     for i in 1:attempts
         max_strat = generate_random_max_strategy(game)
-        optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on)
+        optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = false)
         longest_so_far = max(iterations,longest_so_far)
     end
 
-    return longest_so_far
+    longest, avg = get_random_HK_iterations_max(game, attempts = attempts, optimizer = optimizer, logging_on = logging_on)
+    longest_so_far = max(longest, longest_so_far)
+    return longest_so_far, avg
 end 
+
+"""
+    get_random_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+
+Tries many random seed strtageies for Hoffman-Karp looking for the longest runtime and average runtime
+Returns {Int}, {Int} the largest number of iterations,the average number of iteration, 
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `attempts::Int`: The number of random strategies to try
+- `optimizer::DataType`: the optimizer that JUMP should use
+- `logging_on::Bool`: whether or not to log basic progress
+"""
+function get_random_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    itr_tracker = Vector{Int}()
+    longest_so_far = 0
+    for i in 1:attempts
+        if logging_on && i%5 == 0
+            println("iteration: $i")
+        end
+        max_strat = generate_random_max_strategy(game)
+        optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = false)
+        push!(itr_tracker, iterations)
+        longest_so_far = max(iterations,longest_so_far)
+    end
+    return longest_so_far, mean(itr_tracker)
+end
 
 """
     get_most_HK_iterations_min(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
@@ -181,20 +210,7 @@ function compare_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer
         println("   HK:", iterations,  "   Mod-HK:",mod_iterations, tag)
     end
 
-end 
-
-
-
-
-
-
-
-
-
-
-
-
-
+end
 
 function run_HK_comparison(filename::String; attempts::Int=100)
     compare_HK_iterations(read_stopping_game(filename),attempts=attempts)
@@ -233,10 +249,15 @@ function run_mod_hk(game::String;optimizer::DataType = CPLEX.Optimizer, logging_
     game = read_stopping_game(game)
     avg_node_order = generate_random_average_nodes_order(game)
     optimal_strategy, iterations = mod_hoffman_karp_switch_min_nodes(game, avg_node_order, optimizer=optimizer, logging_on=logging_on, log_analysis=true)
+    println(optimal_strategy)
     println("iterations: $iterations")
 end
 
-
+function run_mod_hk(game::Vector{SGNode};optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    avg_node_order = generate_random_average_nodes_order(game)
+    optimal_strategy, iterations = mod_hoffman_karp_switch_min_nodes(game, avg_node_order, optimizer=optimizer, logging_on=logging_on, log_analysis=true, log_values= true)
+    println("iterations: $iterations")
+end
 
 
 
@@ -278,4 +299,21 @@ function run_geo_hk(filename::String = "64_64_64_r/64_64_64_r_1.ssg",optimizer::
     optimal_strategy, seeded_iterations  = geometric_hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on)
 
     println("End")
+end
+
+
+function analyze_benchmark_set(folder_name::String = "balanced_4096";attempts = 100, start::Int = 1)
+    folder_path = string("instances/benchmark/$folder_name")
+  
+    # Get a list of files in the folder
+    files = readdir(folder_path)
+    # Iterate over the files
+    for file_index in start:lastindex(files)
+        file = files[file_index]
+        println("Processing: ",file)
+        game = read_stopping_game(string("benchmark/",folder_name,"/",file))
+        longest, avg = get_most_HK_iterations_max(game, attempts = attempts, logging_on = true)
+        println("Longest: ", longest, " Average:", avg)
+        write_analysis("$folder_name", file, longest, avg)
+    end
 end

@@ -49,7 +49,7 @@ function generate_worst_games_max(nmax::Int, nmin::Int, navg::Int, num_to_write:
             return
         end
 
-        iterations = get_most_HK_iterations_max(game, attempts=num_strategy_attempts,optimizer = optimizer, logging_on=false)
+        iterations, avg = get_most_HK_iterations_max(game, attempts=num_strategy_attempts,optimizer = optimizer, logging_on=false)
         placement = searchsortedfirst(matching_iterations, iterations)
         insert!(matching_iterations, placement, iterations)
         insert!(worst_games, placement, game)
@@ -155,9 +155,9 @@ function generate_worst_reduced_games(nmax::Int=64, nmin::Int=64, navg::Int=64, 
         end
 
         println("Running HK Strategies for Max")
-        iterations_max = get_most_HK_iterations_max(game, attempts=num_strategy_attempts,optimizer = optimizer, logging_on=false)
+        iterations_max, avg = get_most_HK_iterations_max(game, attempts=num_strategy_attempts,optimizer = optimizer, logging_on=false)
         println("Running HK Strategies for Min")
-        iterations_min = get_most_HK_iterations_min(game, attempts=num_strategy_attempts,optimizer = optimizer, logging_on=false)
+        iterations_min, avg = get_most_HK_iterations_min(game, attempts=num_strategy_attempts,optimizer = optimizer, logging_on=false)
         println("Checking Results")
         iterations = min(iterations_max,iterations_min)
         placement = searchsortedfirst(matching_iterations, iterations)
@@ -244,5 +244,35 @@ function generate_worst_reduced_games_mod(nmax::Int=64, nmin::Int=64, navg::Int=
 
     for (i,game) in enumerate(worst_games)
         write_stopping_game(game, string(filename,"_",i,".ssg"), max_iterations = matching_max_iterations[i],min_iterations = matching_min_iterations[i],sccs=scc_storage[i])
+    end
+end
+
+function generate_balanced_benchmark_set(node_total::Int, num_to_generate::Int=100, filename::String="benchmark/balanced"; optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    a_modifiers = [9,5,11/3,3,13/5,7/3,15/7,2]
+    mn_modifiers = [4,2,4/3,1,4/5,2/3,4/7,1/2]
+    names = ["1-4", "2-4", "3-4", "4-4", "5-4", "6-4", "7-4", "8-4"]
+
+    a = 0
+    m = 0
+    n = 0
+    folder_name = string(filename, "_$node_total")
+    if !isdir(string("instances/", folder_name))
+        mkdir(string("instances/", folder_name))
+    end
+
+    for i in 1:lastindex(a_modifiers)
+        a = round(Int, (node_total-1)/a_modifiers[i])
+        m = round(Int,a*mn_modifiers[i])
+        n = m
+        new_node_total = a + m + n + 2
+        println("$a $m $n $new_node_total")
+
+        for j in 1:num_to_generate
+            game, sccs  = generate_fully_reduced_stopping_game(m,n,a)
+            while length(game)  != new_node_total || length(sccs) != 3
+                game, sccs  = generate_fully_reduced_stopping_game(m, n, a, logging_on=false)
+            end
+            write_stopping_game(game, string(folder_name,"/",names[i],"_$m","_$n","_$a","_$j",".ssg"))
+        end
     end
 end

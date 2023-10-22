@@ -147,3 +147,9 @@ function write_stopping_game(nodes::Vector{SGNode}, filename::String; max_iterat
         end
     close(file)
 end
+
+function write_analysis(filename::String, instancename::String, worst::Int, avg::Float64)
+    file = open(string(@__DIR__ , "/../analysis/" , filename),"a")
+        write(file,string(instancename," worst: $worst"," avg: $avg","\n"))
+    close(file)
+end

@@ -1,7 +1,7 @@
 """
     find_ones_or_zeros(find_ones::Bool, game::Vector{SGNode}, parentmap::Dict{Int, Vector{Int}})
 
-A method thhat find all of the nodes in a game that collapse to a value of 1
+A method that find all of the nodes in a game that collapse to a value of 1
 
 # Arguments
 - `find_ones::Bool`: if true, finds the ones, else finds the zeros
@@ -206,6 +206,7 @@ function reindex_by_sccs(game::Vector{SGNode},orderedsccs::Vector{Vector{Int}})
     indexmap = Dict{Int, Int}(0 => 0)
     counter = 1
     for scc in orderedsccs
+        sort!(scc)
         for e in scc
             indexmap[e] = counter
             counter += 1
@@ -305,7 +306,7 @@ Return (Vector{SGNode}, Vector{Vector{Int}}) the reduced game and the scc associ
 """
 function reduce_game(game::Union{Vector{SGNode},Vector{MutableSGNode}}, parentmap::Dict{Int, Vector{Int}})
     reducedgame = remove_ones_and_zeros(game, parentmap)
-    reducedgame = remove_single_arc_nodes(reducedgame::Vector{SGNode})
+    reducedgame = remove_single_arc_nodes(reducedgame)
     orderedsccs = sort_into_sccs(reducedgame)
     reducedgame = reindex_by_sccs(reducedgame,orderedsccs)
 
