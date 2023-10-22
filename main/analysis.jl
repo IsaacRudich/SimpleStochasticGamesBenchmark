@@ -29,9 +29,9 @@ function get_most_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,opti
         longest_so_far = max(iterations,longest_so_far)
     end
 
-    longest, avg = get_random_HK_iterations_max(game, attempts = attempts, optimizer = optimizer, logging_on = logging_on)
+    longest, avg, avg_time = get_random_HK_iterations_max(game, attempts = attempts, optimizer = optimizer, logging_on = logging_on)
     longest_so_far = max(longest, longest_so_far)
-    return longest_so_far, avg
+    return longest_so_far, avg, avg_time
 end 
 
 """
@@ -48,17 +48,21 @@ Returns {Int}, {Int} the largest number of iterations,the average number of iter
 """
 function get_random_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
     itr_tracker = Vector{Int}()
+    time_tracker = Vector{Float64}()
     longest_so_far = 0
     for i in 1:attempts
         if logging_on && i%5 == 0
             println("iteration: $i")
         end
         max_strat = generate_random_max_strategy(game)
-        optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = false)
+        elapsed_time = @elapsed begin
+            optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = false)
+        end
         push!(itr_tracker, iterations)
+        push!(time_tracker, elapsed_time)
         longest_so_far = max(iterations,longest_so_far)
     end
-    return longest_so_far, mean(itr_tracker)
+    return longest_so_far, mean(itr_tracker), mean(time_tracker)
 end
 
 """
@@ -259,6 +263,29 @@ function run_mod_hk(game::Vector{SGNode};optimizer::DataType = CPLEX.Optimizer, 
     println("iterations: $iterations")
 end
 
+function get_average_mod_hk(game::Vector{SGNode};attempts::Int = 100, optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    for i in 1:attempts
+        avg_node_order = generate_random_average_nodes_order(game)
+        optimal_strategy, iterations = mod_hoffman_karp_switch_min_nodes(game, avg_node_order, optimizer=optimizer, logging_on=false, log_analysis=false, log_values=false)
+    end
+
+    itr_tracker = Vector{Int}()
+    time_tracker = Vector{Float64}()
+    longest_so_far = 0
+    for i in 1:attempts
+        if logging_on && i%5 == 0
+            println("iteration: $i")
+        end
+        avg_node_order = generate_random_average_nodes_order(game)
+        elapsed_time = @elapsed begin
+            optimal_strategy, iterations = mod_hoffman_karp_switch_min_nodes(game, avg_node_order, optimizer=optimizer, logging_on=false, log_analysis=false, log_values=false)
+        end
+        push!(itr_tracker, iterations)
+        push!(time_tracker, elapsed_time)
+        longest_so_far = max(iterations,longest_so_far)
+    end
+    return longest_so_far, mean(itr_tracker), mean(time_tracker)
+end
 
 
 
@@ -302,7 +329,7 @@ function run_geo_hk(filename::String = "64_64_64_r/64_64_64_r_1.ssg",optimizer::
 end
 
 
-function analyze_benchmark_set(folder_name::String = "balanced_4096";attempts = 100, start::Int = 1)
+function analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer::DataType = CPLEX.Optimizer, attempts::Int = 100, start::Int = 1)
     folder_path = string("instances/benchmark/$folder_name")
   
     # Get a list of files in the folder
@@ -312,8 +339,11 @@ function analyze_benchmark_set(folder_name::String = "balanced_4096";attempts = 
         file = files[file_index]
         println("Processing: ",file)
         game = read_stopping_game(string("benchmark/",folder_name,"/",file))
-        longest, avg = get_most_HK_iterations_max(game, attempts = attempts, logging_on = true)
-        println("Longest: ", longest, " Average:", avg)
-        write_analysis("$folder_name", file, longest, avg)
+        longest, avg, avg_time = get_most_HK_iterations_max(game, attempts = attempts, logging_on = true)
+        println("Longest: ", longest, " Average: ", avg, " Average Run Time: ", avg_time)
+
+        longest_mod, avg_mod, avg_time_mod = get_average_mod_hk(game, attempts = attempts, logging_on = true)
+        println("Longest_Mod: ", longest_mod, " Average_Mod: ", avg_mod, " Average Run Time Mod: ", avg_time_mod)
+        write_analysis("$folder_name", file, longest, avg, avg_time, longest_mod, avg_mod, avg_time_mod)
     end
 end

@@ -148,8 +148,23 @@ function write_stopping_game(nodes::Vector{SGNode}, filename::String; max_iterat
     close(file)
 end
 
-function write_analysis(filename::String, instancename::String, worst::Int, avg::Float64)
-    file = open(string(@__DIR__ , "/../analysis/" , filename),"a")
-        write(file,string(instancename," worst: $worst"," avg: $avg","\n"))
+"""
+    write_analysis(filename::String, instancename::String, worst::Int, avg::Float64)
+
+Append to an analysis file
+
+# Arguments
+- `filename::String`: The name of the file (do not include an extension, that is done automatically)
+- `instancename::String`: the name of the instance being analyzed
+- `worst::Int`: the longest run time in HK iterations
+- `avg::Float64`: the average run time in HK iterations
+- `time::Float64`: the average run time in seconds for HK
+- `worst_mod::Int`: the longest run time in mod-HK iterations
+- `avg_mod::Float64`: the average run time in mod-HK iterations
+- `time_mod::Float64`: the average run time in seconds for mod-HK
+"""
+function write_analysis(filename::String, instancename::String, worst::Int, avg::Float64, time::Float64, worst_mod::Int, avg_mod::Float64, time_mod::Float64)
+    file = open(string(@__DIR__ , "/../analysis/" , filename,".txt"),"a")
+        write(file,string(instancename," HK-worst: $worst"," HK-avg: $avg"," HK-avg-time: $time"," HK-mod-worst: $worst_mod"," HK-mod-avg: $avg_mod"," HK-mod-avg-time: $time_mod","\n"))
     close(file)
 end

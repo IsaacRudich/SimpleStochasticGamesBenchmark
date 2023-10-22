@@ -49,7 +49,7 @@ function generate_worst_games_max(nmax::Int, nmin::Int, navg::Int, num_to_write:
             return
         end
 
-        iterations, avg = get_most_HK_iterations_max(game, attempts=num_strategy_attempts,optimizer = optimizer, logging_on=false)
+        iterations, avg, avg_time = get_most_HK_iterations_max(game, attempts=num_strategy_attempts,optimizer = optimizer, logging_on=false)
         placement = searchsortedfirst(matching_iterations, iterations)
         insert!(matching_iterations, placement, iterations)
         insert!(worst_games, placement, game)
@@ -155,9 +155,9 @@ function generate_worst_reduced_games(nmax::Int=64, nmin::Int=64, navg::Int=64, 
         end
 
         println("Running HK Strategies for Max")
-        iterations_max, avg = get_most_HK_iterations_max(game, attempts=num_strategy_attempts,optimizer = optimizer, logging_on=false)
+        iterations_max, avg, avg_time = get_most_HK_iterations_max(game, attempts=num_strategy_attempts,optimizer = optimizer, logging_on=false)
         println("Running HK Strategies for Min")
-        iterations_min, avg = get_most_HK_iterations_min(game, attempts=num_strategy_attempts,optimizer = optimizer, logging_on=false)
+        iterations_min, avg, avg_time = get_most_HK_iterations_min(game, attempts=num_strategy_attempts,optimizer = optimizer, logging_on=false)
         println("Checking Results")
         iterations = min(iterations_max,iterations_min)
         placement = searchsortedfirst(matching_iterations, iterations)
