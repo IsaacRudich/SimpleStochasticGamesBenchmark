@@ -236,6 +236,15 @@ function mod_hoffman_karp_switch_max_nodes(game::Vector{SGNode},average_node_ord
 
 			sort!(average_node_order, by = x -> value(v[x]), rev = true)
 			new_max_strat = generate_max_strategy_from_average_order(game, average_node_order, parentmap)
+			new_max_strat_fast = generate_max_strategy_from_average_order(game, average_node_order, max_tails, min_parent_map)
+
+			ic = 0
+			for key in keys(new_max_strat)
+				if new_max_strat[key] != new_max_strat_fast[key]
+					ic += 1
+				end
+			end
+			println("Should be 0: $ic")
 
 			for key in keys(max_strat)
 				if max_strat[key] != new_max_strat[key]
@@ -316,7 +325,7 @@ function get_max_tails(game::Vector{SGNode}, parentmap::Dict{Int, Vector{Int}})
 		if node.type == average || node.type == minimizer
 			empty!(tail)
 			assigned .= false
-			for p_id in parentmap(i)
+			for p_id in parentmap[i]
 				if game[p_id].type == maximizer
 					push!(queue, p_id)
 					assigned[p_id] = true
@@ -332,7 +341,7 @@ function get_max_tails(game::Vector{SGNode}, parentmap::Dict{Int, Vector{Int}})
 					push!(tail, (current_id,false))
 				end
 				
-				for p_id in parentmap(current_id)
+				for p_id in parentmap[current_id]
 					if game[p_id].type == maximizer && !assigned[p_id]
 						push!(queue, p_id)
 						assigned[p_id] = true

@@ -23,9 +23,9 @@ function get_most_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,opti
     optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = false)
     longest_so_far = max(iterations,longest_so_far)
 
-    longest, avg, avg_time = get_random_HK_iterations_max(game, attempts = attempts, optimizer = optimizer, logging_on = logging_on)
+    longest, avg, med, stdev,avg_time = get_random_HK_iterations_max(game, attempts = attempts, optimizer = optimizer, logging_on = logging_on)
     longest_so_far = max(longest, longest_so_far)
-    return longest_so_far, avg, avg_time
+    return longest_so_far, avg, med, stdev, avg_time
 end 
 
 """
@@ -57,7 +57,7 @@ function get_random_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,op
         push!(time_tracker, elapsed_time)
         longest_so_far = max(iterations,longest_so_far)
     end
-    return longest_so_far, mean(itr_tracker), mean(time_tracker)
+    return longest_so_far, mean(itr_tracker), median(itr_tracker), std(itr_tracker), mean(time_tracker)
 end
 
 """
@@ -275,7 +275,7 @@ function get_average_mod_hk(game::Vector{SGNode};attempts::Int = 100, optimizer:
         push!(time_tracker, elapsed_time)
         longest_so_far = max(iterations,longest_so_far)
     end
-    return longest_so_far, mean(itr_tracker), mean(time_tracker)
+    return longest_so_far, mean(itr_tracker),median(itr_tracker),std(itr_tracker), mean(time_tracker)
 end
 
 
@@ -330,11 +330,11 @@ function analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer:
         file = files[file_index]
         println("Processing: ",file)
         game = read_stopping_game(string("benchmark/",folder_name,"/",file))
-        longest, avg, avg_time = get_most_HK_iterations_max(game, attempts = attempts, logging_on = true)
+        longest, avg, med, stdev, avg_time = get_most_HK_iterations_max(game, attempts = attempts, logging_on = true)
         println("Longest: ", longest, " Average: ", avg, " Average Run Time: ", avg_time)
 
-        longest_mod, avg_mod, avg_time_mod = get_average_mod_hk(game, attempts = attempts, logging_on = true)
+        longest_mod, avg_mod, avg_med, avg_stdev, avg_time_mod = get_average_mod_hk(game, attempts = attempts, logging_on = true)
         println("Longest_Mod: ", longest_mod, " Average_Mod: ", avg_mod, " Average Run Time Mod: ", avg_time_mod)
-        write_analysis("$folder_name", file, longest, avg, avg_time, longest_mod, avg_mod, avg_time_mod)
+        write_analysis("$folder_name", file, longest, avg, med, stdev, avg_time, longest_mod, avg_mod, avg_med, avg_stdev, avg_time_mod)
     end
 end

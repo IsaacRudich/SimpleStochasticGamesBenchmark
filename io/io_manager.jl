@@ -158,13 +158,17 @@ Append to an analysis file
 - `instancename::String`: the name of the instance being analyzed
 - `worst::Int`: the longest run time in HK iterations
 - `avg::Float64`: the average run time in HK iterations
+- `med::Float64`: the median run time in HK iterations
+- `stdev::Float64`: the standard deviation run time of HK iterations
 - `time::Float64`: the average run time in seconds for HK
 - `worst_mod::Int`: the longest run time in mod-HK iterations
 - `avg_mod::Float64`: the average run time in mod-HK iterations
+- `med_mod::Float64`: the median run time in mod-HK iterations
+- `stdev_mod::Float64`: the standard deviation run time of mod-HK iterations
 - `time_mod::Float64`: the average run time in seconds for mod-HK
 """
-function write_analysis(filename::String, instancename::String, worst::Int, avg::Float64, time::Float64, worst_mod::Int, avg_mod::Float64, time_mod::Float64)
+function write_analysis(filename::String, instancename::String, worst::Int, avg::Float64, med::Float64, stdev::Float64 ,time::Float64, worst_mod::Int, avg_mod::Float64, med_mod::Float64, stdev_mod::Float64,time_mod::Float64)
     file = open(string(@__DIR__ , "/../analysis/" , filename,".txt"),"a")
-        write(file,string(instancename," HK-worst: $worst"," HK-avg: $avg"," HK-avg-time: $time"," HK-mod-worst: $worst_mod"," HK-mod-avg: $avg_mod"," HK-mod-avg-time: $time_mod","\n"))
+        write(file,string(instancename," HK-worst: $worst"," HK-avg: $avg"," HK-med: $med"," HK-dev: $stdev"," HK-avg-time: $time"," HK-mod-worst: $worst_mod"," HK-mod-avg: $avg_mod"," HK-mod-med: $med_mod"," HK-mod-stdev: $stdev_mod"," HK-mod-avg-time: $time_mod","\n"))
     close(file)
 end
