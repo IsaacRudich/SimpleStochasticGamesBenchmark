@@ -1,7 +1,7 @@
 using StatsBase
 using JuMP
 # using CPLEX
-# using GLPK
+using GLPK
 using SCIP #need a solver that uses rational numbers for numerical stability
 using Random
 using Dates
