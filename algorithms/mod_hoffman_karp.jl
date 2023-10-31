@@ -212,16 +212,17 @@ Solve an SSG using a Modified Hoffman Karp that skips iterations by jumping to t
 """
 function mod_hoffman_karp_switch_max_nodes(game::Vector{SGNode},average_node_order::Vector{Int}; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=true, log_switches::Bool=false,log_values::Bool=false)	
 	epsilon = eps()
-    #strategy initialization
-	parentmap = get_parent_map(game)
-	min_parent_map = get_min_parents(game, parentmap)
-	max_tails = get_max_tails(game, parentmap)
-	max_strat = generate_max_strategy_from_average_order(game, average_node_order, parentmap)
 
 	#memory allocation
 	labeled = zeros(Int, length(game)-2)
     queue = Vector{Int}()
     sizehint!(queue, length(game))
+
+    #strategy initialization
+	parentmap = get_parent_map(game)
+	min_parent_map = get_min_parents(game, parentmap)
+	max_tails = get_max_tails(game, parentmap)
+	max_strat = generate_max_strategy_from_average_order(game, average_node_order, max_tails, min_parent_map, labeled, queue)
 
 	#main algorithm loop
 	node_switched = true
@@ -240,16 +241,7 @@ function mod_hoffman_karp_switch_max_nodes(game::Vector{SGNode},average_node_ord
 			#check if optimal
 
 			sort!(average_node_order, by = x -> value(v[x]), rev = true)
-			new_max_strat = generate_max_strategy_from_average_order(game, average_node_order, parentmap)
-			new_max_strat_fast = generate_max_strategy_from_average_order(game, average_node_order, max_tails, min_parent_map, labeled, queue)
-
-			ic = 0
-			for key in keys(new_max_strat)
-				if new_max_strat[key] != new_max_strat_fast[key]
-					ic += 1
-				end
-			end
-			println("Should be 0: $ic")
+			new_max_strat = generate_max_strategy_from_average_order(game, average_node_order, max_tails, min_parent_map, labeled, queue)
 
 			for key in keys(max_strat)
 				if max_strat[key] != new_max_strat[key]
@@ -331,7 +323,7 @@ function get_max_tails(game::Vector{SGNode}, parentmap::Dict{Int, Vector{Int}})
 			assigned .= false
 			assigned[i] = true
 			for p_id in parentmap[i]
-				if game[p_id].type == maximizer
+				if game[p_id].type == maximizer && !assigned[p_id]
 					push!(queue, p_id)
 					assigned[p_id] = true
 				end

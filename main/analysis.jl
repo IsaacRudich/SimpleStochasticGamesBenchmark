@@ -263,7 +263,7 @@ function get_average_mod_hk(game::Vector{SGNode};attempts::Int = 100, optimizer:
     time_tracker = Vector{Float64}()
     longest_so_far = 0
     for i in 1:attempts
-        if logging_on && i%1 == 0
+        if logging_on && i%5 == 0
             println("iteration: $i")
         end
         avg_node_order = generate_random_average_nodes_order(game)
