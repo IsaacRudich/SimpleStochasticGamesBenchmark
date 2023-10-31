@@ -382,7 +382,7 @@ function generate_min_strategy_from_average_order(game::Vector{SGNode}, average_
 end
 
 """
-    generate_max_strategy_from_average_order(game::Vector{SGNode}, average_node_order::Vector{Int}, max_tails::Dict{Int, Vector{Tuple{Int, Bool}}}, min_parent_map::Dict{Int, Vector{Int}})
+    generate_max_strategy_from_average_order(game::Vector{SGNode}, average_node_order::Vector{Int}, max_tails::Dict{Int, Vector{Tuple{Int, Bool}}}, min_parent_map::Dict{Int, Vector{Int}}, labeled::Vector{Int}, queue::Vector{Int})
 
 Create a max strategy from an ordering of average nodes
 
@@ -391,16 +391,12 @@ Create a max strategy from an ordering of average nodes
 - `average_node_order::Vector{Int}`: list of average node ids, sorted highest to lowest
 - `max_tails::Dict{Int, Vector{Tuple{Int, Bool}}}`: max tails for the average and min nodes
 - `min_parent_map::Dict{Int, Vector{Int}}`: map of nodes to their min parents
+- `labeled::Vector{Int}`: the labels
+- `queue::Vector{Int}`: the process queue
 """
-function generate_max_strategy_from_average_order(game::Vector{SGNode}, average_node_order::Vector{Int}, max_tails::Dict{Int, Vector{Tuple{Int, Bool}}}, min_parent_map::Dict{Int, Vector{Int}})
-    labeled = zeros(Int, length(game)-2)
-
-    @inbounds for avg_node_id in average_node_order
-        labeled[avg_node_id] = true
-    end
-
-    queue = Vector{Int}()
-    sizehint!(queue, length(game))
+function generate_max_strategy_from_average_order(game::Vector{SGNode}, average_node_order::Vector{Int}, max_tails::Dict{Int, Vector{Tuple{Int, Bool}}}, min_parent_map::Dict{Int, Vector{Int}}, labeled::Vector{Int}, queue::Vector{Int})
+    labeled .= 0
+    empty!(queue)
 
     @inbounds for avg_node_id in average_node_order
         push!(queue, avg_node_id)
