@@ -333,8 +333,8 @@ function analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer:
         longest, avg, med, stdev, avg_time = get_most_HK_iterations_max(game, attempts = attempts, logging_on = true)
         println("Longest: ", longest, " Average: ", avg, " Average Run Time: ", avg_time)
 
-        longest_mod, avg_mod, avg_med, avg_stdev, avg_time_mod = get_average_mod_hk(game, attempts = attempts, logging_on = true)
+        longest_mod, avg_mod, med_mod, stdev_mod, avg_time_mod = get_average_mod_hk(game, attempts = attempts, logging_on = true)
         println("Longest_Mod: ", longest_mod, " Average_Mod: ", avg_mod, " Average Run Time Mod: ", avg_time_mod)
-        write_analysis("$folder_name", file, longest, avg, med, stdev, avg_time, longest_mod, avg_mod, avg_med, avg_stdev, avg_time_mod)
+        write_analysis("$folder_name", file, longest, avg, med, stdev, avg_time, longest_mod, avg_mod, med_mod, stdev_mod, avg_time_mod)
     end
 end
