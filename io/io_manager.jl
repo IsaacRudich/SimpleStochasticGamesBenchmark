@@ -149,7 +149,7 @@ function write_stopping_game(nodes::Vector{SGNode}, filename::String; max_iterat
 end
 
 """
-    write_analysis(filename::String, instancename::String, worst::Int, avg::Float64)
+    write_analysis(filename::String, instancename::String, worst::Int, avg::Float64, med::Float64, stdev::Float64 ,time::Float64, worst_mod::Int, avg_mod::Float64, med_mod::Float64, stdev_mod::Float64,time_mod::Float64)
 
 Append to an analysis file
 
