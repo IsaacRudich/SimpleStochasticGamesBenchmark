@@ -17,7 +17,7 @@ function generate_new_game(nmax::Int, nmin::Int, navg::Int)
 end 
 
 """
-    generate_worst_games_max(nmax::Int, nmin::Int, navg::Int, num_to_write::Int, num_to_generate::Int, num_strategy_attempts::Int, filename::String; optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    generate_worst_games_max(nmax::Int, nmin::Int, navg::Int, num_to_write::Int, num_to_generate::Int, num_strategy_attempts::Int, filename::String; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
 
 Generate hard to solve SSGs, and writes them to a files. Hard here assumes you are the max player
 
@@ -32,7 +32,7 @@ Generate hard to solve SSGs, and writes them to a files. Hard here assumes you a
 - `optimizer::DataType`: the solver to use for HK
 - `logging_on::Bool`: turns on debug statements
 """
-function generate_worst_games_max(nmax::Int, nmin::Int, navg::Int, num_to_write::Int, num_to_generate::Int, num_strategy_attempts::Int, filename::String; optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function generate_worst_games_max(nmax::Int, nmin::Int, navg::Int, num_to_write::Int, num_to_generate::Int, num_strategy_attempts::Int, filename::String; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
     worst_games = Vector{Vector{SGNode}}()
     matching_iterations = Vector{Int}()
     sizehint!(worst_games, num_to_write+1)
@@ -66,7 +66,7 @@ function generate_worst_games_max(nmax::Int, nmin::Int, navg::Int, num_to_write:
 end
 
 """
-    generate_worst_games_min(nmax::Int, nmin::Int, navg::Int, num_to_write::Int, num_to_generate::Int, num_strategy_attempts::Int, filename::String; optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    generate_worst_games_min(nmax::Int, nmin::Int, navg::Int, num_to_write::Int, num_to_generate::Int, num_strategy_attempts::Int, filename::String; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
 
 Generate hard to solve SSGs, and writes them to a files. Hard here assumes you are the min player
 
@@ -81,7 +81,7 @@ Generate hard to solve SSGs, and writes them to a files. Hard here assumes you a
 - `optimizer::DataType`: the solver to use for HK
 - `logging_on::Bool`: turns on debug statements
 """
-function generate_worst_games_min(nmax::Int, nmin::Int, navg::Int, num_to_write::Int, num_to_generate::Int, num_strategy_attempts::Int, filename::String; optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function generate_worst_games_min(nmax::Int, nmin::Int, navg::Int, num_to_write::Int, num_to_generate::Int, num_strategy_attempts::Int, filename::String; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
     worst_games = Vector{Vector{SGNode}}()
     matching_iterations = Vector{Int}()
     sizehint!(worst_games, num_to_write+1)
@@ -116,7 +116,7 @@ end
 
 
 """
-    generate_worst_reduced_games(nmax::Int, nmin::Int, navg::Int, num_to_write::Int, num_to_generate::Int, num_strategy_attempts::Int, filename::String; optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    generate_worst_reduced_games(nmax::Int, nmin::Int, navg::Int, num_to_write::Int, num_to_generate::Int, num_strategy_attempts::Int, filename::String; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
 
 Generate hard to solve reduced SSGs, and writes them to a files. 
 
@@ -131,7 +131,7 @@ Generate hard to solve reduced SSGs, and writes them to a files.
 - `optimizer::DataType`: the solver to use for HK
 - `logging_on::Bool`: turns on debug statements
 """
-function generate_worst_reduced_games(nmax::Int=64, nmin::Int=64, navg::Int=64, num_to_write::Int=10, num_to_generate::Int=50, num_strategy_attempts::Int=250, filename::String="64_64_64_r"; optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function generate_worst_reduced_games(nmax::Int=64, nmin::Int=64, navg::Int=64, num_to_write::Int=10, num_to_generate::Int=50, num_strategy_attempts::Int=250, filename::String="64_64_64_r"; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
     worst_games = Vector{Vector{SGNode}}()
     matching_iterations = Vector{Int}()
     matching_max_iterations = Vector{Int}()
@@ -182,7 +182,7 @@ function generate_worst_reduced_games(nmax::Int=64, nmin::Int=64, navg::Int=64, 
 end
 
 """
-    generate_worst_reduced_games_mod(nmax::Int, nmin::Int, navg::Int, num_to_write::Int, num_to_generate::Int, num_strategy_attempts::Int, filename::String; optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    generate_worst_reduced_games_mod(nmax::Int, nmin::Int, navg::Int, num_to_write::Int, num_to_generate::Int, num_strategy_attempts::Int, filename::String; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
 
 Generate hard to solve reduced SSGs (based on mod-HK), and writes them to a files. 
 
@@ -197,7 +197,7 @@ Generate hard to solve reduced SSGs (based on mod-HK), and writes them to a file
 - `optimizer::DataType`: the solver to use for HK
 - `logging_on::Bool`: turns on debug statements
 """
-function generate_worst_reduced_games_mod(nmax::Int=64, nmin::Int=64, navg::Int=64, num_to_write::Int=10, num_to_generate::Int=50, num_strategy_attempts::Int=250, filename::String="64_64_64_m"; optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function generate_worst_reduced_games_mod(nmax::Int=64, nmin::Int=64, navg::Int=64, num_to_write::Int=10, num_to_generate::Int=50, num_strategy_attempts::Int=250, filename::String="64_64_64_m"; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
     worst_games = Vector{Vector{SGNode}}()
     matching_iterations = Vector{Int}()
     matching_max_iterations = Vector{Int}()
@@ -247,7 +247,7 @@ function generate_worst_reduced_games_mod(nmax::Int=64, nmin::Int=64, navg::Int=
     end
 end
 
-function generate_balanced_benchmark_set(node_total::Int, num_to_generate::Int=100, filename::String="benchmark/balanced"; optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function generate_balanced_benchmark_set(node_total::Int, num_to_generate::Int=100, filename::String="benchmark/balanced"; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
     a_modifiers = [9,5,11/3,3,13/5,7/3,15/7,2]
     mn_modifiers = [4,2,4/3,1,4/5,2/3,4/7,1/2]
     names = ["1-4", "2-4", "3-4", "4-4", "5-4", "6-4", "7-4", "8-4"]

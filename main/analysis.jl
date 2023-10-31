@@ -1,5 +1,5 @@
 """
-    get_most_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    get_most_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
 
 A heuristic method tries some intentional, and many random, seed strtageies for Hoffman-Karp looking for the longest runtime
 Returns {Int} the largest number of iterations found
@@ -10,7 +10,7 @@ Returns {Int} the largest number of iterations found
 - `optimizer::DataType`: the optimizer that JUMP should use
 - `logging_on::Bool`: whether or not to log basic progress
 """
-function get_most_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function get_most_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
     max_strat = generate_upwards_max_strategy(game)
     optimal_strategy, iterations = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = false)
     longest_so_far = iterations
@@ -23,19 +23,13 @@ function get_most_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,opti
     optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = false)
     longest_so_far = max(iterations,longest_so_far)
 
-    for i in 1:attempts
-        max_strat = generate_random_max_strategy(game)
-        optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = false)
-        longest_so_far = max(iterations,longest_so_far)
-    end
-
     longest, avg, avg_time = get_random_HK_iterations_max(game, attempts = attempts, optimizer = optimizer, logging_on = logging_on)
     longest_so_far = max(longest, longest_so_far)
     return longest_so_far, avg, avg_time
 end 
 
 """
-    get_random_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    get_random_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
 
 Tries many random seed strtageies for Hoffman-Karp looking for the longest runtime and average runtime
 Returns {Int}, {Int} the largest number of iterations,the average number of iteration, 
@@ -46,17 +40,18 @@ Returns {Int}, {Int} the largest number of iterations,the average number of iter
 - `optimizer::DataType`: the optimizer that JUMP should use
 - `logging_on::Bool`: whether or not to log basic progress
 """
-function get_random_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function get_random_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false, sublogging_on::Bool = false)
     itr_tracker = Vector{Int}()
     time_tracker = Vector{Float64}()
     longest_so_far = 0
     for i in 1:attempts
-        if logging_on && i%5 == 0
+        if logging_on && i%1 == 0
             println("iteration: $i")
         end
         max_strat = generate_random_max_strategy(game)
+        
         elapsed_time = @elapsed begin
-            optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = false)
+            optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = sublogging_on)
         end
         push!(itr_tracker, iterations)
         push!(time_tracker, elapsed_time)
@@ -66,7 +61,7 @@ function get_random_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,op
 end
 
 """
-    get_most_HK_iterations_min(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    get_most_HK_iterations_min(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
 
 A heuristic method tries some intentional, and many random, seed strtageies for Hoffman-Karp looking for the longest runtime
 Returns {Int} the largest number of iterations found
@@ -77,7 +72,7 @@ Returns {Int} the largest number of iterations found
 - `optimizer::DataType`: the optimizer that JUMP should use
 - `logging_on::Bool`: whether or not to log basic progress
 """
-function get_most_HK_iterations_min(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function get_most_HK_iterations_min(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
     min_strat = generate_upwards_min_strategy(game)
     optimal_strategy, iterations = hoffman_karp_switch_min_nodes(game,min_strat, optimizer = optimizer, logging_on = logging_on)
     longest_so_far = iterations
@@ -100,7 +95,7 @@ function get_most_HK_iterations_min(game::Vector{SGNode}; attempts::Int=100,opti
 end 
 
 """
-    get_most_mod_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    get_most_mod_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
 
 A heuristic method tries many random seed strtageies for Mod Hoffman-Karp looking for the longest runtime
 Returns {Int} the largest number of iterations found
@@ -111,7 +106,7 @@ Returns {Int} the largest number of iterations found
 - `optimizer::DataType`: the optimizer that JUMP should use
 - `logging_on::Bool`: whether or not to log basic progress
 """
-function get_most_mod_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function get_most_mod_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
     longest_so_far = 0
 
     for i in 1:attempts
@@ -124,7 +119,7 @@ function get_most_mod_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,
 end 
 
 """
-    get_most_mod_HK_iterations_min(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    get_most_mod_HK_iterations_min(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
 
 A heuristic method tries many random seed strtageies for Mod Hoffman-Karp looking for the longest runtime
 Returns {Int} the largest number of iterations found
@@ -135,7 +130,7 @@ Returns {Int} the largest number of iterations found
 - `optimizer::DataType`: the optimizer that JUMP should use
 - `logging_on::Bool`: whether or not to log basic progress
 """
-function get_most_mod_HK_iterations_min(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function get_most_mod_HK_iterations_min(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
     longest_so_far = 0
 
     for i in 1:attempts
@@ -181,7 +176,7 @@ end
 
 
 """
-    compare_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+    compare_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
 
 Tries many random seed strtageies for Hoffman-Karp and compares the run time of HK to Mod-HK
 Returns {Int} the largest number of iterations found
@@ -192,7 +187,7 @@ Returns {Int} the largest number of iterations found
 - `optimizer::DataType`: the optimizer that JUMP should use
 - `logging_on::Bool`: whether or not to log basic progress
 """
-function compare_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function compare_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
     parentmap = get_parent_map(game)
 	
     for i in 1:attempts
@@ -221,7 +216,7 @@ function run_HK_comparison(filename::String; attempts::Int=100)
 end
 
 
-function test_ones(filename::String = "64_64_32/64_64_32_1.ssg",optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false, log_values = true)
+function test_ones(filename::String = "64_64_32/64_64_32_1.ssg",optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false, log_values = true)
     game::Vector{SGNode} = read_stopping_game(filename)
     parentmap = get_parent_map(game)
 
@@ -249,36 +244,32 @@ function test_ones(filename::String = "64_64_32/64_64_32_1.ssg",optimizer::DataT
     # mod_optimal_strategy, mod_iterations = mod_hoffman_karp_switch_max_nodes(game,avg_node_order, optimizer = optimizer, logging_on = logging_on, log_values=log_values)
 end
 
-function run_mod_hk(game::String;optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function run_mod_hk(game::String;optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
     game = read_stopping_game(game)
     avg_node_order = generate_random_average_nodes_order(game)
-    optimal_strategy, iterations = mod_hoffman_karp_switch_min_nodes(game, avg_node_order, optimizer=optimizer, logging_on=logging_on, log_analysis=true)
+    optimal_strategy, iterations = mod_hoffman_karp_switch_min_nodes(game, avg_node_order, optimizer=optimizer, logging_on=logging_on, log_analysis=false)
     println(optimal_strategy)
     println("iterations: $iterations")
 end
 
-function run_mod_hk(game::Vector{SGNode};optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function run_mod_hk(game::Vector{SGNode};optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
     avg_node_order = generate_random_average_nodes_order(game)
-    optimal_strategy, iterations = mod_hoffman_karp_switch_min_nodes(game, avg_node_order, optimizer=optimizer, logging_on=logging_on, log_analysis=true, log_values= true)
+    optimal_strategy, iterations = mod_hoffman_karp_switch_min_nodes(game, avg_node_order, optimizer=optimizer, logging_on=logging_on, log_analysis=false, log_values= false)
     println("iterations: $iterations")
 end
 
-function get_average_mod_hk(game::Vector{SGNode};attempts::Int = 100, optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
-    for i in 1:attempts
-        avg_node_order = generate_random_average_nodes_order(game)
-        optimal_strategy, iterations = mod_hoffman_karp_switch_min_nodes(game, avg_node_order, optimizer=optimizer, logging_on=false, log_analysis=false, log_values=false)
-    end
-
+function get_average_mod_hk(game::Vector{SGNode};attempts::Int = 100, optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
     itr_tracker = Vector{Int}()
     time_tracker = Vector{Float64}()
     longest_so_far = 0
     for i in 1:attempts
-        if logging_on && i%5 == 0
+        if logging_on && i%1 == 0
             println("iteration: $i")
         end
         avg_node_order = generate_random_average_nodes_order(game)
+        # println(avg_node_order)
         elapsed_time = @elapsed begin
-            optimal_strategy, iterations = mod_hoffman_karp_switch_min_nodes(game, avg_node_order, optimizer=optimizer, logging_on=false, log_analysis=false, log_values=false)
+            optimal_strategy, iterations = mod_hoffman_karp_switch_max_nodes(game, avg_node_order, optimizer=optimizer, logging_on=false)
         end
         push!(itr_tracker, iterations)
         push!(time_tracker, elapsed_time)
@@ -293,7 +284,7 @@ end
 
 
 
-function run_nearness_to_one(filename::String = "64_64_64_r/64_64_64_r_1.ssg",optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false, log_values = false)
+function run_nearness_to_one(filename::String = "64_64_64_r/64_64_64_r_1.ssg",optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false, log_values = false)
     game::Vector{SGNode} = read_stopping_game(filename)
     parentmap = get_parent_map(game)
 
@@ -316,7 +307,7 @@ function run_nearness_to_one(filename::String = "64_64_64_r/64_64_64_r_1.ssg",op
 end
 
 
-function run_geo_hk(filename::String = "64_64_64_r/64_64_64_r_1.ssg",optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function run_geo_hk(filename::String = "64_64_64_r/64_64_64_r_1.ssg",optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
     game::Vector{SGNode} = read_stopping_game(filename)
     parentmap = get_parent_map(game)
 
@@ -329,7 +320,7 @@ function run_geo_hk(filename::String = "64_64_64_r/64_64_64_r_1.ssg",optimizer::
 end
 
 
-function analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer::DataType = CPLEX.Optimizer, attempts::Int = 100, start::Int = 1)
+function analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer::DataType = SCIP.Optimizer, attempts::Int = 100, start::Int = 1)
     folder_path = string("instances/benchmark/$folder_name")
   
     # Get a list of files in the folder

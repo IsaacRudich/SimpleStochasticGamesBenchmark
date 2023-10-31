@@ -1,14 +1,14 @@
 """
-    generate_JuMP_model_min_strategy(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer))
+    generate_JuMP_model_min_strategy(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = SCIP.Optimizer))
 
-Create and return a JUMP Model (solver:GLPK) with the constraints that define the feasible polytope for the SSG
+Create and return a JUMP Model (solver:SCIP) with the constraints that define the feasible polytope for the SSG
 
 # Arguments
 - `game::Vector{SGNode}`: The SSG
 - `max_strat::Dict{Int, Int}`: the current min strategy
 - `optimizer::DataType`: the optimizer that JUMP should use
 """
-function generate_JuMP_model_min_strategy(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer)
+function generate_JuMP_model_min_strategy(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = SCIP.Optimizer)
     model = Model(optimizer)
     set_silent(model)
     
@@ -65,16 +65,16 @@ function add_maximize_sum_objective!(model,variables)
 end
 
 """
-    generate_JuMP_model_max_strategy(game::Vector{SGNode},min_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer))
+    generate_JuMP_model_max_strategy(game::Vector{SGNode},min_strat::Dict{Int, Int}; optimizer::DataType = SCIP.Optimizer))
 
-Create and return a JUMP Model (solver:GLPK) with the constraints that define the feasible polytope for the SSG
+Create and return a JUMP Model (solver:SCIP) with the constraints that define the feasible polytope for the SSG
 
 # Arguments
 - `game::Vector{SGNode}`: The SSG
 - `max_strat::Dict{Int, Int}`: the current min strategy
 - `optimizer::DataType`: the optimizer that JUMP should use
 """
-function generate_JuMP_model_max_strategy(game::Vector{SGNode},min_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer)
+function generate_JuMP_model_max_strategy(game::Vector{SGNode},min_strat::Dict{Int, Int}; optimizer::DataType = SCIP.Optimizer)
     model = Model(optimizer)
     set_silent(model)
     

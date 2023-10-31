@@ -1,7 +1,8 @@
 using StatsBase
 using JuMP
-using GLPK
-using CPLEX
+# using CPLEX
+# using GLPK
+using SCIP #need a solver that uses rational numbers for numerical stability
 using Random
 using Dates
 
@@ -17,4 +18,4 @@ include("algorithms/algorithms_main.jl")
 include("generator/generator.jl")
 include("main/main.jl")
 
-#generate_worst_games(128, 128, 64, 10, 100, 100, "128_128_64", optimizer = CPLEX.Optimizer, logging_on=false)
+#generate_worst_games(128, 128, 64, 10, 100, 100, "128_128_64", optimizer = SCIP.Optimizer, logging_on=false)

@@ -1,5 +1,5 @@
 """
-	hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true, log_switches::Bool=false, log_values::Bool=false)	
+	hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=true, log_switches::Bool=false, log_values::Bool=false)	
 
 Solve an SSG using Hoffman Karp
 
@@ -9,7 +9,7 @@ Solve an SSG using Hoffman Karp
 - `optimizer::DataType`: the optimizer that JUMP should use
 - `logging_on::Bool`: whether or not to log basic progress
 """
-function geometric_hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = GLPK.Optimizer, logging_on::Bool=true)	
+function geometric_hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=true)	
 	epsilon = eps()
     #strategy initialization
 	min_strat = Dict{Int, Int}()
@@ -230,7 +230,7 @@ function analyze_switches_history(game::Vector{SGNode}, switches_history::Vector
     end
 end
 
-function test_geo_hypothesis(filename::String,data_size::Int;optimizer::DataType = CPLEX.Optimizer, logging_on::Bool=false)
+function test_geo_hypothesis(filename::String,data_size::Int;optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
     game::Vector{SGNode} = read_stopping_game(filename)
 
     switches_history = Vector{Dict{Int, Int}}()
