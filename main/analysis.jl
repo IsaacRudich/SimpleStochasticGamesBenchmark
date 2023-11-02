@@ -29,7 +29,7 @@ function get_most_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,opti
 end 
 
 """
-    get_random_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
+    get_random_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false, sublogging_on::Bool = false))
 
 Tries many random seed strtageies for Hoffman-Karp looking for the longest runtime and average runtime
 Returns {Int}, {Int} the largest number of iterations,the average number of iteration, 
@@ -39,23 +39,33 @@ Returns {Int}, {Int} the largest number of iterations,the average number of iter
 - `attempts::Int`: The number of random strategies to try
 - `optimizer::DataType`: the optimizer that JUMP should use
 - `logging_on::Bool`: whether or not to log basic progress
+- `sublogging_on::Bool`: whether or not to log optimizer progress
 """
 function get_random_HK_iterations_max(game::Vector{SGNode}; attempts::Int=100,optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false, sublogging_on::Bool = false)
     itr_tracker = Vector{Int}()
     time_tracker = Vector{Float64}()
     longest_so_far = 0
     for i in 1:attempts
-        if logging_on && i%5 == 0
-            println("iteration: $i")
+        failure_check = true
+        while failure_check
+            if logging_on && i%5 == 0
+                println("iteration: $i")
+            end
+            max_strat = generate_random_max_strategy(game)
+
+            elapsed_time = @elapsed begin
+                hk_solution = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = sublogging_on, auto_terminate = true)
+            end
+            if !isnothing(hk_solution)
+                optimal_strategy, iterations = hk_solution
+                push!(itr_tracker, iterations)
+                push!(time_tracker, elapsed_time)
+                longest_so_far = max(iterations,longest_so_far)
+                failure_check = false
+            else
+                println("Numerical Instability, Retrying Iteration $i")
+            end
         end
-        max_strat = generate_random_max_strategy(game)
-        
-        elapsed_time = @elapsed begin
-            optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = sublogging_on)
-        end
-        push!(itr_tracker, iterations)
-        push!(time_tracker, elapsed_time)
-        longest_so_far = max(iterations,longest_so_far)
     end
     return longest_so_far, mean(itr_tracker), median(itr_tracker), std(itr_tracker), mean(time_tracker)
 end
@@ -211,72 +221,85 @@ function compare_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer
 
 end
 
-function run_HK_comparison(filename::String; attempts::Int=100)
-    compare_HK_iterations(read_stopping_game(filename),attempts=attempts)
-end
+"""
+    get_random_mod_HK_iterations_max(game::Vector{SGNode};attempts::Int = 100, optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false, sublogging_on::Bool = false))
 
+Tries many random seed strtageies for Mod-Hoffman-Karp looking for the longest runtime and average runtime
+Returns {Int}, {Int} the largest number of iterations,the average number of iteration, 
 
-function test_ones(filename::String = "64_64_32/64_64_32_1.ssg",optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false, log_values = true)
-    game::Vector{SGNode} = read_stopping_game(filename)
-    parentmap = get_parent_map(game)
-
-    ones_vector = find_ones_or_zeros(true, game, parentmap)
-    zeros_vector = find_ones_or_zeros(false, game, parentmap)
-    print("Ones: ")
-    for i in 1:lastindex(ones_vector)
-        if ones_vector[i]
-            print(i," ")
-        end
-    end
-    println("\n")
-    print("Zeros: ")
-    for i in 1:lastindex(ones_vector)
-        if zeros_vector[i]
-            print(i," ")
-        end
-    end
-    println("\n\n")
-
-    
-    avg_node_order = generate_random_average_nodes_order(game)
-    max_strat = generate_max_strategy_from_average_order(game, avg_node_order, parentmap)
-    optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on,log_values=log_values)
-    # mod_optimal_strategy, mod_iterations = mod_hoffman_karp_switch_max_nodes(game,avg_node_order, optimizer = optimizer, logging_on = logging_on, log_values=log_values)
-end
-
-function run_mod_hk(game::String;optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
-    game = read_stopping_game(game)
-    avg_node_order = generate_random_average_nodes_order(game)
-    optimal_strategy, iterations = mod_hoffman_karp_switch_min_nodes(game, avg_node_order, optimizer=optimizer, logging_on=logging_on, log_analysis=false)
-    println(optimal_strategy)
-    println("iterations: $iterations")
-end
-
-function run_mod_hk(game::Vector{SGNode};optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
-    avg_node_order = generate_random_average_nodes_order(game)
-    optimal_strategy, iterations = mod_hoffman_karp_switch_min_nodes(game, avg_node_order, optimizer=optimizer, logging_on=logging_on, log_analysis=false, log_values= false)
-    println("iterations: $iterations")
-end
-
-function get_average_mod_hk(game::Vector{SGNode};attempts::Int = 100, optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `attempts::Int`: The number of random strategies to try
+- `optimizer::DataType`: the optimizer that JUMP should use
+- `logging_on::Bool`: whether or not to log basic progress
+- `sublogging_on::Bool`: whether or not to log optimizer progress
+"""
+function get_random_mod_HK_iterations_max(game::Vector{SGNode};attempts::Int = 100, optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false, sublogging_on::Bool = false)
     itr_tracker = Vector{Int}()
     time_tracker = Vector{Float64}()
     longest_so_far = 0
     for i in 1:attempts
-        if logging_on && i%5 == 0
-            println("iteration: $i")
+        failure_check = true
+        while failure_check
+            if logging_on && i%5 == 0
+                println("iteration: $i")
+            end
+            avg_node_order = generate_random_average_nodes_order(game)
+            elapsed_time = @elapsed begin
+                mod_hk_solution = mod_hoffman_karp_switch_max_nodes(game, avg_node_order, optimizer=optimizer, logging_on=sublogging_on, auto_terminate = true)
+            end
+            if !isnothing(mod_hk_solution)
+                optimal_strategy, iterations = mod_hk_solution
+                push!(itr_tracker, iterations)
+                push!(time_tracker, elapsed_time)
+                longest_so_far = max(iterations,longest_so_far)
+                failure_check = false
+            else
+                println("Numerical Instability, Retrying Iteration $i")
+            end
         end
-        avg_node_order = generate_random_average_nodes_order(game)
-        # println(avg_node_order)
-        elapsed_time = @elapsed begin
-            optimal_strategy, iterations = mod_hoffman_karp_switch_max_nodes(game, avg_node_order, optimizer=optimizer, logging_on=false)
-        end
-        push!(itr_tracker, iterations)
-        push!(time_tracker, elapsed_time)
-        longest_so_far = max(iterations,longest_so_far)
     end
     return longest_so_far, mean(itr_tracker),median(itr_tracker),std(itr_tracker), mean(time_tracker)
 end
+
+"""
+    analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer::DataType = CPLEX.Optimizer, attempts::Int = 100, start::Int = 1)
+
+Tries many random seed strtageies for Hoffman-Karp and Mod-Hoffman-Karp looking for the longest runtime and average runtime
+Writes the results to a file
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `attempts::Int`: The number of random strategies to try
+- `optimizer::DataType`: the optimizer that JUMP should use
+- `logging_on::Bool`: whether or not to log basic progress
+"""
+function analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer::DataType = CPLEX.Optimizer, attempts::Int = 100, start::Int = 1)
+    folder_path = string("instances/benchmark/$folder_name")
+    
+    # Get a list of files in the folder
+    files = readdir(folder_path)
+    # Iterate over the files
+    for file_index in start:lastindex(files)
+        file = files[file_index]
+        println("Processing: ",file)
+        game = read_stopping_game(string("benchmark/",folder_name,"/",file))
+        println("\nRunning Hoffman-Karp")
+        longest, avg, med, stdev, avg_time = get_random_HK_iterations_max(game, optimizer = optimizer, attempts = attempts, logging_on = true, sublogging_on = false)
+        println("Longest: ", longest, " Average: ", avg, " Median: ",med," St. Dev: ",round(stdev, digits = 2)," Average Run Time: ", round(avg_time, digits = 2))
+
+        println("\nRunning Mod-Hoffman-Karp")
+        longest_mod, avg_mod, med_mod, stdev_mod, avg_time_mod = get_random_mod_HK_iterations_max(game, optimizer = optimizer, attempts = attempts, logging_on = true, sublogging_on = false)
+        println("Longest_Mod: ", longest_mod, " Average_Mod: ", avg_mod, " Median Mod: ",med_mod," St. Dev Mod: ",round(stdev_mod, digits = 2)," Average Run Time Mod: ", round(avg_time_mod, digits = 2))
+        println("\nSpeedup: ",round(avg_time/avg_time_mod,digits = 2))
+        write_analysis("$folder_name", file, longest, avg, med, stdev, avg_time, longest_mod, avg_mod, med_mod, stdev_mod, avg_time_mod)
+    end
+end
+
+
+
+
+
 
 
 
@@ -317,24 +340,4 @@ function run_geo_hk(filename::String = "64_64_64_r/64_64_64_r_1.ssg",optimizer::
     optimal_strategy, seeded_iterations  = geometric_hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on)
 
     println("End")
-end
-
-
-function analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer::DataType = SCIP.Optimizer, attempts::Int = 100, start::Int = 1)
-    folder_path = string("instances/benchmark/$folder_name")
-  
-    # Get a list of files in the folder
-    files = readdir(folder_path)
-    # Iterate over the files
-    for file_index in start:lastindex(files)
-        file = files[file_index]
-        println("Processing: ",file)
-        game = read_stopping_game(string("benchmark/",folder_name,"/",file))
-        longest, avg, med, stdev, avg_time = get_most_HK_iterations_max(game, optimizer = optimizer, attempts = attempts, logging_on = true)
-        println("Longest: ", longest, " Average: ", avg, " Median: ",med," St. Dev: ",stdev," Average Run Time: ", avg_time)
-
-        longest_mod, avg_mod, med_mod, stdev_mod, avg_time_mod = get_average_mod_hk(game, optimizer = optimizer, attempts = attempts, logging_on = true)
-        println("Longest_Mod: ", longest_mod, " Average_Mod: ", avg_mod, " Median Mod: ",med_mod," St. Dev Mod: ",stdev_mod," Average Run Time Mod: ", avg_time_mod)
-        write_analysis("$folder_name", file, longest, avg, med, stdev, avg_time, longest_mod, avg_mod, med_mod, stdev_mod, avg_time_mod)
-    end
 end

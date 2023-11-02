@@ -1,5 +1,5 @@
 """
-	hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=true, log_switches::Bool=false, log_values::Bool=false)	
+	hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=true, log_switches::Bool=false, log_values::Bool=false, auto_terminate::Bool=false)	
 
 Solve an SSG using Hoffman Karp
 
@@ -10,12 +10,16 @@ Solve an SSG using Hoffman Karp
 - `logging_on::Bool`: whether or not to log basic progress
 - `log_switches::Bool`: whether or not to print switchable nodes, default is false
 - `log_values::Bool`: whether or not to print the optimal values
+- `auto_terminate::Bool`: if the solver suspects it is caught in an infinite loop, it stops and returns nothing
 """
-function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=true, log_switches::Bool=false, log_values::Bool=false)	
+function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int, Int}; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=true, log_switches::Bool=false, log_values::Bool=false, auto_terminate::Bool=false)	
 	epsilon = eps()
-	# epsilon = 1e-9
     #strategy initialization
 	min_strat = Dict{Int, Int}()
+
+	if auto_terminate
+		obj_vals = fill(-1.0, 5)
+	end
 
 	#main algorithm loop
 	node_switched = true
@@ -24,9 +28,6 @@ function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int,
 	sizehint!(switched_nodes, length(keys(max_strat)))
 	while node_switched
 		i += 1
-		# if i == 2
-		# 	write_stupid_dict(max_strat)
-		# end
 		node_switched = false
 		#generate the optimal min strategy relative to the max strategy
 	    model = generate_JuMP_model_min_strategy(game,max_strat, optimizer = optimizer)
@@ -64,6 +65,14 @@ function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int,
 							push!(switched_nodes, id)
 						end
 					end
+				end
+			end
+			if auto_terminate
+				if obj_vals[1] == objective_value(model)
+					return nothing
+				else
+					popfirst!(obj_vals)
+					push!(obj_vals,objective_value(model))
 				end
 			end
 			if logging_on
@@ -114,7 +123,7 @@ end
 
 
 """
-	hoffman_karp_switch_min_nodes(game::Vector{SGNode},min_strat::Dict{Int, Int}; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=true, log_switches::Bool=false, log_values::Bool=false)	
+	hoffman_karp_switch_min_nodes(game::Vector{SGNode},min_strat::Dict{Int, Int}; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=true, log_switches::Bool=false, log_values::Bool=false, auto_terminate::Bool=false)	
 
 Solve an SSG using Hoffman Karp
 
@@ -125,11 +134,16 @@ Solve an SSG using Hoffman Karp
 - `logging_on::Bool`: whether or not to log basic progress
 - `log_switches::Bool`: whether or not to print switchable nodes, default is false
 - `log_values::Bool`: whether or not to print the optimal values
+- `auto_terminate::Bool`: if the solver suspects it is caught in an infinite loop, it stops and returns nothing
 """
-function hoffman_karp_switch_min_nodes(game::Vector{SGNode},min_strat::Dict{Int, Int}; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=true, log_switches::Bool=false, log_values::Bool=false)
+function hoffman_karp_switch_min_nodes(game::Vector{SGNode},min_strat::Dict{Int, Int}; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=true, log_switches::Bool=false, log_values::Bool=false, auto_terminate::Bool=false)
 	epsilon = eps()
     #strategy initialization
 	max_strat = Dict{Int, Int}()
+
+	if auto_terminate
+		obj_vals = fill(-1.0, 5)
+	end
 
 	#main algorithm loop
 	node_switched = true
@@ -175,6 +189,14 @@ function hoffman_karp_switch_min_nodes(game::Vector{SGNode},min_strat::Dict{Int,
 							push!(switched_nodes, id)
 						end
 					end
+				end
+			end
+			if auto_terminate
+				if obj_vals[1] == objective_value(model)
+					return nothing
+				else
+					popfirst!(obj_vals)
+					push!(obj_vals,objective_value(model))
 				end
 			end
 			if logging_on

@@ -441,6 +441,65 @@ function generate_max_strategy_from_average_order(game::Vector{SGNode}, average_
 end
 
 """
+    generate_min_strategy_from_average_order(game::Vector{SGNode}, average_node_order::Vector{Int}, max_tails::Dict{Int, Vector{Tuple{Int, Bool}}}, min_parent_map::Dict{Int, Vector{Int}}, labeled::Vector{Int}, queue::Vector{Int})
+
+Create a min strategy from an ordering of average nodes
+
+# Arguments
+- `game::Vector{SGNode}`: The SSG
+- `average_node_order::Vector{Int}`: list of average node ids, sorted highest to lowest
+- `max_tails::Dict{Int, Vector{Tuple{Int, Bool}}}`: max tails for the average and min nodes
+- `min_parent_map::Dict{Int, Vector{Int}}`: map of nodes to their min parents
+- `labeled::Vector{Int}`: the labels
+- `queue::Vector{Int}`: the process queue
+"""
+function generate_min_strategy_from_average_order(game::Vector{SGNode}, average_node_order::Vector{Int}, max_tails::Dict{Int, Vector{Tuple{Int, Bool}}}, min_parent_map::Dict{Int, Vector{Int}}, labeled::Vector{Int}, queue::Vector{Int})
+    labeled .= 0
+    empty!(queue)
+
+    @inbounds for avg_node_id in average_node_order
+        push!(queue, avg_node_id)
+
+        while !isempty(queue)
+            current_node_id = pop!(queue)
+            #add the max tail
+            for (tail_node_id, uses_arc_a) in max_tails[current_node_id]
+                if labeled[tail_node_id] == 0
+                    #track who is assigned where
+                    if uses_arc_a
+                        labeled[tail_node_id] = 1
+                    else
+                        labeled[tail_node_id] = 2
+                    end
+
+                    #handle min parents
+                    handle_min_nodes_subroutine!(game, labeled, queue, tail_node_id, min_parent_map)
+                end
+            end
+
+            #handle min parents
+            handle_min_nodes_subroutine!(game, labeled, queue, current_node_id, min_parent_map)
+        end
+    end
+
+    min_strat = Dict{Int,Int}()
+
+    @inbounds for (id,node) in enumerate(game)
+        if node.type == minimizer
+            if labeled[id] == 1
+                min_strat[id] = node.arc_a
+            elseif labeled[id] == 2
+                min_strat[id] = node.arc_b
+            else
+                throw(error("SOMETHING HAS GONE WRONG"))
+            end
+        end
+    end
+
+    return min_strat
+end
+
+"""
     handle_min_nodes_subroutine!(game::Vector{SGNode}, labeled::Vector{Int}, queue::Vector{Int}, current_node_id::Int, min_parent_map::Dict{Int, Vector{Int}})
 
 Subroutine for generate_max_strategy_from_average_order
