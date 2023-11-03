@@ -18,7 +18,7 @@ function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int,
 	min_strat = Dict{Int, Int}()
 
 	if auto_terminate
-		obj_vals = fill(-1.0, 5)
+		obj_vals = fill(-1.0, 10)
 	end
 
 	#main algorithm loop
@@ -68,7 +68,7 @@ function hoffman_karp_switch_max_nodes(game::Vector{SGNode},max_strat::Dict{Int,
 				end
 			end
 			if auto_terminate
-				if obj_vals[1] == objective_value(model)
+				if objective_value(model) in obj_vals[1:5]
 					return nothing
 				else
 					popfirst!(obj_vals)
@@ -142,7 +142,7 @@ function hoffman_karp_switch_min_nodes(game::Vector{SGNode},min_strat::Dict{Int,
 	max_strat = Dict{Int, Int}()
 
 	if auto_terminate
-		obj_vals = fill(-1.0, 5)
+		obj_vals = fill(-1.0, 10)
 	end
 
 	#main algorithm loop
@@ -192,7 +192,7 @@ function hoffman_karp_switch_min_nodes(game::Vector{SGNode},min_strat::Dict{Int,
 				end
 			end
 			if auto_terminate
-				if obj_vals[1] == objective_value(model)
+				if objective_value(model) in obj_vals[1:5]
 					return nothing
 				else
 					popfirst!(obj_vals)

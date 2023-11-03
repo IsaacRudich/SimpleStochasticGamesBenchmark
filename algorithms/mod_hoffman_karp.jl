@@ -19,7 +19,7 @@ function mod_hoffman_karp_switch_max_nodes_slow(game::Vector{SGNode},average_nod
 	max_strat = generate_max_strategy_from_average_order(game, average_node_order, parentmap)
 
 	if auto_terminate
-		obj_vals = fill(-1.0, 5)
+		obj_vals = fill(-1.0, 10)
 	end
 
 	#main algorithm loop
@@ -67,7 +67,7 @@ function mod_hoffman_karp_switch_max_nodes_slow(game::Vector{SGNode},average_nod
 			throw(ArgumentError("Hoffman-Karp Model Generation Failed"))
 		end
 		if auto_terminate
-			if obj_vals[1] == objective_value(model)
+			if objective_value(model) in obj_vals[1:5]
 				return nothing
 			else
 				popfirst!(obj_vals)
@@ -131,7 +131,7 @@ function mod_hoffman_karp_switch_min_nodes_slow(game::Vector{SGNode},average_nod
 	min_strat = generate_min_strategy_from_average_order(game, average_node_order, parentmap)
 
 	if auto_terminate
-		obj_vals = fill(-1.0, 5)
+		obj_vals = fill(-1.0, 10)
 	end
 
 	#main algorithm loop
@@ -182,7 +182,7 @@ function mod_hoffman_karp_switch_min_nodes_slow(game::Vector{SGNode},average_nod
 			throw(ArgumentError("Hoffman-Karp Model Generation Failed"))
 		end
 		if auto_terminate
-			if obj_vals[1] == objective_value(model)
+			if objective_value(model) in obj_vals[1:5]
 				return nothing
 			else
 				popfirst!(obj_vals)
@@ -246,7 +246,7 @@ function mod_hoffman_karp_switch_max_nodes(game::Vector{SGNode},average_node_ord
     sizehint!(queue, length(game))
 
 	if auto_terminate
-		obj_vals = fill(-1.0, 5)
+		obj_vals = fill(-1.0, 10)
 	end
 
     #strategy initialization
@@ -300,7 +300,7 @@ function mod_hoffman_karp_switch_max_nodes(game::Vector{SGNode},average_node_ord
 			throw(ArgumentError("Hoffman-Karp Model Generation Failed"))
 		end
 		if auto_terminate
-			if obj_vals[1] == objective_value(model)
+			if objective_value(model) in obj_vals[1:5]
 				return nothing
 			else
 				popfirst!(obj_vals)
@@ -366,7 +366,7 @@ function mod_hoffman_karp_switch_min_nodes(game::Vector{SGNode},average_node_ord
     sizehint!(queue, length(game))
 
 	if auto_terminate
-		obj_vals = fill(-1.0, 5)
+		obj_vals = fill(-1.0, 10)
 	end
 
     #strategy initialization
@@ -423,7 +423,7 @@ function mod_hoffman_karp_switch_min_nodes(game::Vector{SGNode},average_node_ord
 			throw(ArgumentError("Hoffman-Karp Model Generation Failed"))
 		end
 		if auto_terminate
-			if obj_vals[1] == objective_value(model)
+			if objective_value(model) in obj_vals[1:5]
 				return nothing
 			else
 				popfirst!(obj_vals)
