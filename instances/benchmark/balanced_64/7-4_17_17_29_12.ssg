@@ -1,0 +1,73 @@
+# benchmark/balanced_64/7-4_17_17_29_12.ssg
+# created: 2023-11-10
+# using instance generator from Avi Rudich, Isaac Rudich, Rachel Rue
+
+NMAX: 17
+NMIN: 17
+NAVG: 29
+
+1 32 34 minimizer
+2 13 26 minimizer
+3 25 20 average
+4 27 21 minimizer
+5 18 50 maximizer
+6 53 36 average
+7 38 6 average
+8 45 37 average
+9 13 36 minimizer
+10 52 30 average
+11 29 41 minimizer
+12 32 45 maximizer
+13 49 15 average
+14 23 3 average
+15 43 55 maximizer
+16 38 30 maximizer
+17 40 62 maximizer
+18 45 8 average
+19 56 5 maximizer
+20 48 12 maximizer
+21 33 42 average
+22 47 6 minimizer
+23 31 53 maximizer
+24 28 45 maximizer
+25 33 56 minimizer
+26 32 9 average
+27 34 44 average
+28 43 13 minimizer
+29 35 17 minimizer
+30 41 45 maximizer
+31 58 4 average
+32 61 49 minimizer
+33 51 24 average
+34 43 40 minimizer
+35 57 17 minimizer
+36 55 14 average
+37 49 46 average
+38 43 16 average
+39 40 10 minimizer
+40 53 42 maximizer
+41 47 20 maximizer
+42 48 7 average
+43 54 56 minimizer
+44 63 26 average
+45 61 1 average
+46 56 11 average
+47 50 22 average
+48 51 44 average
+49 56 21 average
+50 51 19 average
+51 63 61 maximizer
+52 59 10 maximizer
+53 65 24 average
+54 61 39 maximizer
+55 63 2 average
+56 58 6 minimizer
+57 59 36 maximizer
+58 65 12 average
+59 60 30 maximizer
+60 63 51 minimizer
+61 62 40 minimizer
+62 65 42 average
+63 64 43 average
+64 0 0 terminal0
+65 0 0 terminal1

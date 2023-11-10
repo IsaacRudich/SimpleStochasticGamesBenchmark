@@ -247,7 +247,7 @@ function generate_worst_reduced_games_mod(nmax::Int=64, nmin::Int=64, navg::Int=
     end
 end
 
-function generate_balanced_benchmark_set(node_total::Int, num_to_generate::Int=100, filename::String="benchmark/balanced"; optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
+function generate_balanced_benchmark_set(node_total::Int, num_to_generate::Int=100, filename::String="benchmark/balanced"; logging_on::Bool=false)
     a_modifiers = [9,5,11/3,3,13/5,7/3,15/7,2]
     mn_modifiers = [4,2,4/3,1,4/5,2/3,4/7,1/2]
     names = ["1-4", "2-4", "3-4", "4-4", "5-4", "6-4", "7-4", "8-4"]

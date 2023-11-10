@@ -1,0 +1,37 @@
+# benchmark/balanced_32/1-4_12_12_3_58.ssg
+# created: 2023-11-10
+# using instance generator from Avi Rudich, Isaac Rudich, Rachel Rue
+
+NMAX: 12
+NMIN: 12
+NAVG: 3
+
+1 2 13 minimizer
+2 6 4 average
+3 27 20 minimizer
+4 19 14 maximizer
+5 24 6 maximizer
+6 13 13 minimizer
+7 13 19 minimizer
+8 17 13 maximizer
+9 16 3 minimizer
+10 27 3 maximizer
+11 21 1 maximizer
+12 17 26 minimizer
+13 18 26 maximizer
+14 23 12 maximizer
+15 19 8 minimizer
+16 22 11 minimizer
+17 21 7 maximizer
+18 26 21 maximizer
+19 24 25 minimizer
+20 24 13 maximizer
+21 25 25 minimizer
+22 25 10 minimizer
+23 25 5 maximizer
+24 27 11 maximizer
+25 26 26 minimizer
+26 29 9 average
+27 28 15 average
+28 0 0 terminal0
+29 0 0 terminal1
