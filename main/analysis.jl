@@ -263,7 +263,7 @@ function get_random_mod_HK_iterations_max(game::Vector{SGNode};attempts::Int = 1
 end
 
 """
-    analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer::DataType = CPLEX.Optimizer, attempts::Int = 100, start::Int = 1)
+    analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer::DataType = CPLEX.Optimizer, attempts::Int = 100, start::Int = 1, sublogging_on::Bool = true)
 
 Tries many random seed strtageies for Hoffman-Karp and Mod-Hoffman-Karp looking for the longest runtime and average runtime
 Writes the results to a file
@@ -273,8 +273,9 @@ Writes the results to a file
 - `attempts::Int`: The number of random strategies to try
 - `optimizer::DataType`: the optimizer that JUMP should use
 - `logging_on::Bool`: whether or not to log basic progress
+- `sublogging_on::Bool`: turns on iteration prints
 """
-function analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer::DataType = CPLEX.Optimizer, attempts::Int = 100, start::Int = 1)
+function analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer::DataType = CPLEX.Optimizer, attempts::Int = 100, start::Int = 1, sublogging_on::Bool = true)
     folder_path = string("instances/benchmark/$folder_name")
     
     # Get a list of files in the folder
@@ -285,11 +286,11 @@ function analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer:
         println("Processing: ",file)
         game = read_stopping_game(string("benchmark/",folder_name,"/",file))
         println("\nRunning Hoffman-Karp")
-        longest, avg, med, stdev, avg_time = get_random_HK_iterations_max(game, optimizer = optimizer, attempts = attempts, logging_on = true, sublogging_on = false)
+        longest, avg, med, stdev, avg_time = get_random_HK_iterations_max(game, optimizer = optimizer, attempts = attempts, logging_on = sublogging_on, sublogging_on = false)
         println("Longest: ", longest, " Average: ", avg, " Median: ",med," St. Dev: ",round(stdev, digits = 2)," Average Run Time: ", round(avg_time, digits = 2))
 
         println("\nRunning Mod-Hoffman-Karp")
-        longest_mod, avg_mod, med_mod, stdev_mod, avg_time_mod = get_random_mod_HK_iterations_max(game, optimizer = optimizer, attempts = attempts, logging_on = true, sublogging_on = false)
+        longest_mod, avg_mod, med_mod, stdev_mod, avg_time_mod = get_random_mod_HK_iterations_max(game, optimizer = optimizer, attempts = attempts, logging_on = sublogging_on, sublogging_on = false)
         println("Longest_Mod: ", longest_mod, " Average_Mod: ", avg_mod, " Median Mod: ",med_mod," St. Dev Mod: ",round(stdev_mod, digits = 2)," Average Run Time Mod: ", round(avg_time_mod, digits = 2))
         println("\nSpeedup: ",round(avg_time/avg_time_mod,digits = 2))
         write_analysis("$folder_name", file, longest, avg, med, stdev, avg_time, longest_mod, avg_mod, med_mod, stdev_mod, avg_time_mod)
