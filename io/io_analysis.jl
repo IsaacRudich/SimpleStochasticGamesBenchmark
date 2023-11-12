@@ -41,7 +41,7 @@ end
 """
     parse_balanced_analysis!(input_data)
 
-Convert the contents of a file to a Dict{String, Vector{Vector{Float32}}} and return it
+Convert the contents of a file to a Dict{String, Vector{AnalysisDataPoint}} and return it
 
 # Arguments
 - `input_data`: The contents of file
