@@ -1,6 +1,3 @@
-include("debug.jl")
-# include("subroutines.jl")
-# include("reduced_sg_generators.jl")
 include("reindexer.jl")
 include("bad_subgraphs.jl")
 include("fast_sg_generator.jl")

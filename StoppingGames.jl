@@ -6,10 +6,9 @@ using Dates
 using SparseArrays
 using LinearAlgebra
 
-#need a solver that uses rational numbers for numerical stability or risk failure to terminate
-using CPLEX
+#risk failure to terminate with solvers that dont use rational numbers (numerical stability problems)
 using SCIP 
-# using CDDLib
+#using CPLEX
 
 # using Revise
 

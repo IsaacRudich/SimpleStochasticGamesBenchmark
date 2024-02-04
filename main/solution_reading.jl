@@ -16,7 +16,7 @@ end
 """
     retrive_solution_values(game::Vector{SGNode})
 
-Returns the values of a solution
+Returns the values of a solution retrieved from a solution
 
 # Arguments
 - `game::Vector{SGNode}`: The SSG

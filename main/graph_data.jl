@@ -3,6 +3,12 @@ using ColorSchemes
 using Plots.PlotMeasures
 using Printf
 
+"""
+    graph_analysis_data()
+
+Generates graphs using the data in "@__DIR__/../analysis/"
+
+"""
 function graph_analysis_data()
     data = Dict{String, Dict{String, Vector{AnalysisDataPoint}}}()
 
@@ -22,6 +28,12 @@ function graph_analysis_data()
     
 end
 
+"""
+    graph_analysis_data()
+
+Subroutine of graph_analysis_data(), generates the boxplots
+
+"""
 function graph_grouped_boxplot(
         analysis_data::Dict{String, Vector{AnalysisDataPoint}}, 
         analysis_type::String;
@@ -87,6 +99,14 @@ function graph_grouped_boxplot(
     savefig(plot, name)
 end
 
+"""
+    print_latex_table(selection::String="avg")
+
+Reads the data from  "@__DIR__/../analysis/" and prints out a latex table that has been formatted all pretty
+
+# Arguments
+- `selection::String`: The type of data to print to a table, the options are: {avg, time, avg-m, time-m}
+"""
 function print_latex_table(selection::String="avg")
     data = Dict{String, Dict{String, Vector{AnalysisDataPoint}}}()
 

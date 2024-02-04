@@ -206,8 +206,6 @@ function compare_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer
         max_strat = generate_max_strategy_from_average_order(game, avg_node_order, parentmap)
         optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on)
         mod_optimal_strategy, mod_iterations = mod_hoffman_karp_switch_max_nodes(game,avg_node_order, optimizer = optimizer, logging_on = logging_on)
-        
-        useless, check  = hoffman_karp_switch_max_nodes(game,mod_optimal_strategy, optimizer = optimizer, logging_on = logging_on)
     
         tag = " n"
 
@@ -215,7 +213,7 @@ function compare_HK_iterations(game::Vector{SGNode}; attempts::Int=100,optimizer
             tag = " HK Wins!!!"
         end
 
-        print("   Should be 1:",check)
+
         println("   HK:", iterations,  "   Mod-HK:",mod_iterations, tag)
     end
 
@@ -295,50 +293,4 @@ function analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer:
         println("\nSpeedup: ",round(avg_time/avg_time_mod,digits = 2))
         write_analysis("$folder_name", file, longest, avg, med, stdev, avg_time, longest_mod, avg_mod, med_mod, stdev_mod, avg_time_mod)
     end
-end
-
-
-
-
-
-
-
-
-
-
-
-
-function run_nearness_to_one(filename::String = "64_64_64_r/64_64_64_r_1.ssg",optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false, log_values = false)
-    game::Vector{SGNode} = read_stopping_game(filename)
-    parentmap = get_parent_map(game)
-
-    @time decisions, values = solve_using_nearness_to_one(game, parentmap=parentmap)
-
-    avg_node_order = generate_random_average_nodes_order(game)
-    max_strat = generate_max_strategy_from_average_order(game, avg_node_order, parentmap)
-    @time optimal_strategy, iterations  = hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on,log_values=log_values)
-    
-    optimal_values = retrive_solution_values(game, optimal_strategy)
-
-    #compare_solution_values(values,optimal_values)
-    println("Disagreements: ",compare_solutions(decisions,optimal_strategy,a_values = values,b_values = optimal_values))
-
-    @time optimal_strategy, seeded_iterations  = hoffman_karp_switch_max_nodes(game,decisions, optimizer = optimizer, logging_on = logging_on,log_values=log_values)
-    println("Seeded: $seeded_iterations, Random: $iterations")
-
-    # decisions, values = iterative_nearness_to_one(game,parentmap=parentmap)
-    # println("Iterative NTO Disagreements: ",compare_solutions(decisions,optimal_strategy,a_values = values,b_values = optimal_values))
-end
-
-
-function run_geo_hk(filename::String = "64_64_64_r/64_64_64_r_1.ssg",optimizer::DataType = SCIP.Optimizer, logging_on::Bool=false)
-    game::Vector{SGNode} = read_stopping_game(filename)
-    parentmap = get_parent_map(game)
-
-    avg_node_order = generate_random_average_nodes_order(game)
-    max_strat = generate_max_strategy_from_average_order(game, avg_node_order, parentmap)
-
-    optimal_strategy, seeded_iterations  = geometric_hoffman_karp_switch_max_nodes(game,max_strat, optimizer = optimizer, logging_on = logging_on)
-
-    println("End")
 end
