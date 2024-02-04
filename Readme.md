@@ -31,6 +31,24 @@ Instances are saved in *ssg* files. The first lines are for comments indicated w
 
 There must be exactly one of each type of terminal, the 0-terminal must have the index *n-1*, and the 1-terminal must have the index *n*. We reccomend using a text editor if you wish to edit a game manually. Here is an example file:
 
+```text
+# ex.ssg
+# created: 2024-02-04
+# using instance generator from Avi Rudich, Isaac Rudich, Rachel Rue
+
+NMAX: 2
+NMIN: 2
+NAVG: 2
+
+1 4 2 minimizer
+2 3 6 minimizer
+3 5 6 maximizer
+4 6 2 maximizer
+5 7 4 average
+6 8 7 average
+7 0 0 terminal0
+8 0 0 terminal1
+```
 
 ## Using this repository
 
@@ -55,25 +73,6 @@ The following other funtions may also be of interest (documentation for using th
 * `check_for_bad_subgraphs` checks whether a game is a stopping game
 
 Many other functions can be found by exploring the code.
-
-```text
-# ex.ssg
-# created: 2024-02-04
-# using instance generator from Avi Rudich, Isaac Rudich, Rachel Rue
-
-NMAX: 2
-NMIN: 2
-NAVG: 2
-
-1 4 2 minimizer
-2 3 6 minimizer
-3 5 6 maximizer
-4 6 2 maximizer
-5 7 4 average
-6 8 7 average
-7 0 0 terminal0
-8 0 0 terminal1
-```
 
 ### Using LP Solvers
 
