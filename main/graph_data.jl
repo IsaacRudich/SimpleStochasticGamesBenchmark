@@ -64,8 +64,11 @@ function graph_grouped_boxplot(
     g = [fill("hk", length(hk_values)); fill("perm-impr", length(mod_hk_values))]
 
 
-    cs = palette(ColorSchemes.rainbow, 7)
-    cs = [cs[1],cs[2]]
+    # cs = palette(ColorSchemes.rainbow, 7)
+    # cs = [cs[1],cs[2]]
+    safeA1 = RGB(26/255, 133/255, 255/255)  # Bright Blue
+    safeA2 = RGB(212/255, 17/255, 89/255)   # Magenta
+    cs = [safeA1, safeA2]
     plot = groupedboxplot(x ,y, 
             group = g, 
             bar_width = 0.6,
