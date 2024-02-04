@@ -76,4 +76,4 @@ Many other functions can be found by exploring the code.
 
 ### Using LP Solvers
 
-Please be aware that we set the default solver for LPs to *SCIP* because it is freely available. However, when we generated our data for the paper, we used *CPLEX*. You may freely choose your preferred solves from any on the list found [here](https://jump.dev/JuMP.jl/stable/installation/#Supported-solvers).
+Please be aware that we set the default solver for LPs to *SCIP* because it is freely available. However, when we generated our data for the paper, we used *CPLEX*. You may freely choose your preferred solver from any on the list found [here](https://jump.dev/JuMP.jl/stable/installation/#Supported-solvers).
