@@ -261,7 +261,7 @@ function get_random_mod_HK_iterations_max(game::Vector{SGNode};attempts::Int = 1
 end
 
 """
-    analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer::DataType = CPLEX.Optimizer, attempts::Int = 100, start::Int = 1, sublogging_on::Bool = true)
+    analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer::DataType = SCIP.Optimizer, attempts::Int = 100, start::Int = 1, sublogging_on::Bool = true)
 
 Tries many random seed strtageies for Hoffman-Karp and Mod-Hoffman-Karp looking for the longest runtime and average runtime
 Writes the results to a file
@@ -273,7 +273,7 @@ Writes the results to a file
 - `logging_on::Bool`: whether or not to log basic progress
 - `sublogging_on::Bool`: turns on iteration prints
 """
-function analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer::DataType = CPLEX.Optimizer, attempts::Int = 100, start::Int = 1, sublogging_on::Bool = true)
+function analyze_benchmark_set(folder_name::String = "balanced_4096"; optimizer::DataType = SCIP.Optimizer, attempts::Int = 100, start::Int = 1, sublogging_on::Bool = true)
     folder_path = string("instances/benchmark/$folder_name")
     
     # Get a list of files in the folder

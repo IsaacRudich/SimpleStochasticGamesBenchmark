@@ -1,0 +1,16 @@
+# ex.ssg
+# created: 2024-02-04
+# using instance generator from Avi Rudich, Isaac Rudich, Rachel Rue
+
+NMAX: 2
+NMIN: 2
+NAVG: 2
+
+1 4 2 minimizer
+2 3 6 minimizer
+3 5 6 maximizer
+4 6 2 maximizer
+5 7 4 average
+6 8 7 average
+7 0 0 terminal0
+8 0 0 terminal1
