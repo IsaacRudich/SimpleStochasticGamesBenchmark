@@ -1,6 +1,6 @@
 # Simple Stochastic Stopping Game (SSSG) Benchmark Set and Generator
 
-This repository contains a benchmark set with 6400 problems, as well as the code used to generate and analyze the instances. Details about the generator can be found in the paper: *Simple Stochastic Stopping Games: A Generator and Benchmark Library*.
+This repository contains a benchmark set with 6400 problems, as well as the code used to generate and analyze the instances. Details about the generator can be found in the paper: [*Simple Stochastic Stopping Games: A Generator and Benchmark Library*](https://arxiv.org/abs/2402.02571).
 
 ## Getting ready to use this repository
 
